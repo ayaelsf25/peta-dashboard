@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PETA Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Konsep: kaca buram ala iOS di atas latar mesh pink-ungu-biru. Sidebar melayang di desktop, tab bar bawah di ponsel.
+   Font: SF Pro di perangkat Apple, Inter di perangkat lain. Satu dataset, semua tampilan membaca filter yang sama. */
+.watermark-logo{
+  position:fixed;
+  pointer-events:none;
+  z-index:0;
+  opacity:.05;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+:root{
+  --bg1:#F6EEFF; --bg2:#E7EEFF; --bg3:#FFEAF4;
+  --blob1:#FF9AD1; --blob2:#B49BFF; --blob3:#86C1FF; --blob-o:.55;
+  --glass:rgba(255,255,255,.58); --glass-2:rgba(255,255,255,.38); --glass-hi:rgba(255,255,255,.85); --glass-edge:rgba(255,255,255,.75);
+  --stroke:rgba(110,90,190,.14); --stroke-2:rgba(110,90,190,.08);
+  --ink:#1D1B36; --ink-2:#57567D; --ink-3:#8C8AAE;
+  --pink:#F25CA8; --purple:#7A5CFF; --blue:#3D8BFF; --cyan:#2FB6E8;
+  --grad:linear-gradient(135deg,#F46AB0 0%,#8D6BFF 52%,#4C9BFF 100%);
+  --grad-soft:linear-gradient(135deg,rgba(244,106,176,.16),rgba(141,107,255,.16) 52%,rgba(76,155,255,.16));
+  --ok:#3478F6; --ok-2:#79A7FF; --ok-soft:rgba(61,139,255,.16);
+  --no:#D9469B; --no-2:#F17CBE; --no-soft:rgba(232,85,159,.16);
+  --j1:#6B4DFF; --j2:#2FB6E8; --j3:#E8559F;
+  --hm:#5B39D6; --hm0:#D6CBF4;
+  --lv0:#D6CBF4; --lv1:#C1B1F2; --lv2:#A992EE; --lv3:#8D70E8; --lv4:#704FE0; --lv5:#5030C4;
+  --shadow:0 10px 36px rgba(112,88,200,.14),0 2px 6px rgba(112,88,200,.06);
+  --shadow-lg:0 24px 60px rgba(112,88,200,.22);
+  --f:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Inter','Segoe UI',system-ui,sans-serif;
+  --f-display:'Plus Jakarta Sans','Inter',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+  --f-serif:'Instrument Serif',Georgia,serif;
+  --r:28px; --r-sm:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg1:#0B0A1E; --bg2:#0E1230; --bg3:#1A0D29;
+  --blob1:#C2418A; --blob2:#6544E0; --blob3:#2F6FD6; --blob-o:.42;
+  --glass:rgba(38,34,74,.52); --glass-2:rgba(38,34,74,.34); --glass-hi:rgba(255,255,255,.10); --glass-edge:rgba(255,255,255,.12);
+  --stroke:rgba(255,255,255,.10); --stroke-2:rgba(255,255,255,.06);
+  --ink:#F3F1FF; --ink-2:#BAB7DA; --ink-3:#8581AC;
+  --pink:#FF7EC0; --purple:#A78BFA; --blue:#5AA2FF; --cyan:#5CD0F5;
+  --grad:linear-gradient(135deg,#FF7EC0 0%,#A78BFA 52%,#5AA2FF 100%);
+  --grad-soft:linear-gradient(135deg,rgba(255,126,192,.16),rgba(167,139,250,.16) 52%,rgba(90,162,255,.16));
+  --ok:#72A5FF; --ok-2:#A9C7FF; --ok-soft:rgba(90,162,255,.20);
+  --no:#FF86C2; --no-2:#FFB0D8; --no-soft:rgba(255,126,192,.19);
+  --j1:#A78BFA; --j2:#5CD0F5; --j3:#FF86C2;
+  --hm:#332078; --hm0:#7568AA;
+  --lv0:#B7A9F0; --lv1:#A18BEA; --lv2:#8A6FE0; --lv3:#7353D1; --lv4:#5C3BB9; --lv5:#45278F;
+  --shadow:0 12px 36px rgba(0,0,0,.35); --shadow-lg:0 28px 70px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg1:#0B0A1E; --bg2:#0E1230; --bg3:#1A0D29;
+  --blob1:#C2418A; --blob2:#6544E0; --blob3:#2F6FD6; --blob-o:.42;
+  --glass:rgba(38,34,74,.52); --glass-2:rgba(38,34,74,.34); --glass-hi:rgba(255,255,255,.10); --glass-edge:rgba(255,255,255,.12);
+  --stroke:rgba(255,255,255,.10); --stroke-2:rgba(255,255,255,.06);
+  --ink:#F3F1FF; --ink-2:#BAB7DA; --ink-3:#8581AC;
+  --pink:#FF7EC0; --purple:#A78BFA; --blue:#5AA2FF; --cyan:#5CD0F5;
+  --grad:linear-gradient(135deg,#FF7EC0 0%,#A78BFA 52%,#5AA2FF 100%);
+  --grad-soft:linear-gradient(135deg,rgba(255,126,192,.16),rgba(167,139,250,.16) 52%,rgba(90,162,255,.16));
+  --ok:#72A5FF; --ok-2:#A9C7FF; --ok-soft:rgba(90,162,255,.20);
+  --no:#FF86C2; --no-2:#FFB0D8; --no-soft:rgba(255,126,192,.19);
+  --j1:#A78BFA; --j2:#5CD0F5; --j3:#FF86C2;
+  --hm:#332078; --hm0:#7568AA;
+  --lv0:#B7A9F0; --lv1:#A18BEA; --lv2:#8A6FE0; --lv3:#7353D1; --lv4:#5C3BB9; --lv5:#45278F;
+  --shadow:0 12px 36px rgba(0,0,0,.35); --shadow-lg:0 28px 70px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--f);font-size:14px;line-height:1.5;color:var(--ink);letter-spacing:-.006em;
+  background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 52%,var(--bg3) 100%);background-attachment:fixed;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased}
+.mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.mesh i{position:absolute;border-radius:50%;filter:blur(90px);opacity:var(--blob-o);animation:drift 26s ease-in-out infinite}
+.mesh i:nth-child(1){width:46vmax;height:46vmax;left:-12vmax;top:-14vmax;background:var(--blob2)}
+.mesh i:nth-child(2){width:40vmax;height:40vmax;right:-10vmax;top:6vmax;background:var(--blob1);animation-delay:-9s}
+.mesh i:nth-child(3){width:44vmax;height:44vmax;left:24%;bottom:-24vmax;background:var(--blob3);animation-delay:-17s}
+/* Watermark logo sebagai silhouette gradient */
+.mesh::after{
+  content:'';
+  position:fixed;
+  top:50%;
+  left:50%;
+  width:min(37.18vmax,486px);
+  aspect-ratio:1/1;
+  background:var(--grad);
+  -webkit-mask:url('peta.png') center/contain no-repeat;
+  mask:url('peta.png') center/contain no-repeat;
+  opacity:.16;
+  transform:translate(calc(-50% + 3vw),-50%);
+  pointer-events:none;
+  z-index:0;
+}
+:root[data-theme="dark"] .mesh::after{opacity:.19}
+
+/* Fallback jika mask tidak didukung: pakai logo asli dengan blend */
+@supports not (mask:url('x')){
+  .mesh::after{
+    -webkit-mask:none; mask:none;
+    background:url('peta.png') center/contain no-repeat;
+    mix-blend-mode:multiply;
+    filter:grayscale(1) blur(.5px);
+  }
+  :root[data-theme="dark"] .mesh::after{
+    mix-blend-mode:screen;
+    filter:invert(1) grayscale(1);
+  }
+}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(3vmax,-2vmax) scale(1.07)}}
+button,input,select{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-feature-settings:'tnum' 1}
+
+.glass{background:linear-gradient(145deg,var(--glass),var(--glass-2));backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid var(--glass-edge);box-shadow:var(--shadow),inset 0 1px 0 var(--glass-hi);border-radius:var(--r)}
+
+.app{position:relative;z-index:1;display:grid;grid-template-columns:252px minmax(0,1fr);gap:18px;min-height:100vh;padding:14px}
+.side{position:sticky;top:14px;height:calc(100vh - 28px);padding:20px 14px;display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;gap:8px;align-items:flex-start;padding:2px 4px;min-width:0}
+.logo{width:80px;height:42px;flex:0 0 80px}
+.logo img{display:block;width:100%;height:100%;object-fit:contain}
+.logo-fallback{display:grid;place-items:center;width:80px;height:42px;background:var(--grad);border-radius:13px;color:#fff;font-weight:800;font-size:17px}
+.brand>div:last-child{min-width:0;padding-top:2px}
+.brand b{font-size:17px;font-weight:800;letter-spacing:.01em;display:block;line-height:1.1;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand span{display:block;font-size:10.5px;line-height:1.25;color:var(--ink-3);overflow-wrap:anywhere}
+.mobile-brand{display:none}
+.nav{display:flex;flex-direction:column;gap:3px;overflow:auto}
+.nav button{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;border-radius:14px;background:none;color:var(--ink-2);font-weight:600;text-align:left;
+  transition:background .2s,color .2s,box-shadow .2s}
+.nav button svg{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nav button:hover{background:var(--glass-2);color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(141,107,255,.32),inset 0 1px 0 rgba(255,255,255,.35)}
+.nav .sep{height:1px;background:var(--stroke);margin:8px 10px}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:14px;border:1px solid var(--glass-edge);
+  background:linear-gradient(145deg,var(--glass),var(--glass-2));backdrop-filter:blur(16px);font-weight:600;font-size:13px;box-shadow:inset 0 1px 0 var(--glass-hi);transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(112,88,200,.16),inset 0 1px 0 var(--glass-hi)}
+.btn.primary{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 10px 22px rgba(141,107,255,.34),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fileinfo{font-size:11.5px;color:var(--ink-3);text-align:center;word-break:break-all}
+
+.main{min-width:0;padding-block:6px 40px;padding-right:max(6px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 4px 16px}
+.top h1{margin:0;font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-.03em;text-wrap:balance;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-family:var(--f-display)}
+.top p{margin:6px 0 0;color:var(--ink-2)}
+.top-actions{display:flex;gap:8px}
+.icon-btn{width:42px;height:42px;padding:0}
+
+.filters{position:sticky;top:max(14px,env(safe-area-inset-top,0px));z-index:30;display:flex;flex-direction:column;gap:10px;padding:12px 14px;margin-bottom:18px;border-radius:24px}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:14px;background:var(--stroke-2);border:1px solid var(--stroke);flex-wrap:wrap;align-self:flex-start}
+.seg button{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:11px;border:0;background:none;font-weight:600;font-size:13px;color:var(--ink-2);transition:all .2s}
+.seg button i{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.seg button[aria-pressed="true"]{background:var(--glass-hi);color:var(--ink);box-shadow:0 2px 8px rgba(80,60,160,.18),0 0 0 .5px var(--stroke)}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{background:rgba(255,255,255,.16)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.field{position:relative;flex:1 1 150px;min-width:0}
+.field select,.field input{width:100%;padding:10px 13px;border-radius:13px;border:1px solid var(--stroke);background:var(--glass-2);font-size:13px;min-width:0;backdrop-filter:blur(10px)}
+.field input{padding-left:36px}
+.field svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:1.9;stroke-linecap:round}
+.field.search{flex:2 1 240px}
+.count-pill{font-size:12.5px;color:var(--ink-2);white-space:nowrap;padding:0 4px}.count-pill b{color:var(--ink);font-family:var(--f-mono)}
+
+.status{display:none;padding:12px 16px;border-radius:16px;margin-bottom:14px;font-weight:600;font-size:13px;backdrop-filter:blur(16px)}
+.status.show{display:block}
+.status.ok{background:var(--ok-soft);color:var(--ok)}.status.err{background:var(--no-soft);color:var(--no)}.status.info{background:var(--grad-soft);color:var(--purple)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px;margin-bottom:16px}
+.kpi{padding:18px 20px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;right:-38px;top:-38px;width:120px;height:120px;border-radius:50%;background:var(--grad);opacity:.16;filter:blur(18px)}
+.kpi label{display:block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);position:relative}
+.kpi strong{display:block;margin-top:6px;font-size:31px;line-height:1.1;font-weight:800;letter-spacing:-.03em;position:relative;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-feature-settings:'tnum' 1,'zero' 1}
+.kpi small{display:block;margin-top:5px;color:var(--ink-2);font-size:12px;position:relative}
+.kpi.good strong{color:var(--ok)}.kpi.bad strong{color:var(--no)}
+
+.grid{display:grid;gap:16px;margin-bottom:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g21{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+.g12{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.stackcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{min-width:0;padding:20px 22px;margin-bottom:0}
+.grid>.card,.stackcol>.card{margin:0}
+section>.card{margin-bottom:16px}
+.card h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.02em;font-family:var(--f-display)}
+.card .sub{margin:3px 0 14px;font-size:12.5px;color:var(--ink-3)}
+.chart{position:relative;height:290px}.chart.tall{height:360px}.chart.xl{height:370px}.chart.sm{height:250px}
+.radar-summary-card{display:flex;flex-direction:column}
+.radar-summary-card .chart-note{margin:12px 0 0;padding:13px 15px;border:1px solid var(--stroke);border-radius:16px;background:var(--grad-soft);color:var(--ink-2);font-size:12px;line-height:1.55}
+.radar-summary-card .chart-note p{margin:0 0 10px}
+.radar-summary-card .chart-note p:last-child{margin-bottom:0}
+.empty{padding:40px 12px;text-align:center;color:var(--ink-3)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:10px;height:10px;border-radius:4px;display:inline-block}
+
+.bars{display:flex;flex-direction:column;gap:15px}
+.bar-row .hd{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px}
+.bar-row .hd b{font-weight:600}.bar-row .hd span{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.track{height:10px;border-radius:99px;background:var(--no-soft);overflow:hidden}
+.track i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--ok-2));border-radius:99px}
+.bar-row .ft{margin-top:5px;font-size:11.5px;color:var(--ink-3)}
+
+.rank{display:flex;flex-direction:column;gap:8px}
+.rank h4{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.rk{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(54px,1fr) 42px;align-items:center;gap:9px;font-size:11.5px;line-height:1.3}
+.rk span:first-child{min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+.rk .b{height:8px;border-radius:99px;background:var(--stroke-2);overflow:hidden}.rk .b i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+.rk span:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* heatmap */
+.hm-wrap{overflow-x:auto;padding-bottom:6px}
+.hm-row{display:grid;grid-template-columns:var(--lw) repeat(var(--n),minmax(var(--cw),1fr));gap:3px;margin-bottom:3px;min-width:calc(var(--lw) + var(--n) * (var(--cw) + 3px))}
+.hm-l{display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;z-index:1;
+  background:linear-gradient(90deg,var(--bg1),transparent);border-radius:10px}
+:root[data-theme="dark"] .hm-l{background:linear-gradient(90deg,var(--bg2),transparent)}
+.hm-h{display:flex;align-items:flex-end;justify-content:center;min-width:0;overflow:hidden;text-align:center;font-size:8.5px;font-weight:700;line-height:1.15;letter-spacing:-.025em;color:var(--ink-3);padding:0 1px 3px;white-space:nowrap}
+.hm-c{height:32px;border-radius:9px;display:grid;place-items:center;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums;transition:transform .12s}
+.hm-c:has(.hm-sub){height:42px}.hm-sub{font-size:9px;font-weight:700;color:#241A45;text-shadow:0 1px 1px rgba(255,255,255,.7)}
+.hm-c:hover{transform:scale(1.18);z-index:3;box-shadow:0 6px 16px rgba(80,60,170,.35)}
+.hm-c.nil{background:color-mix(in srgb,var(--hm) 30%,var(--hm0));color:var(--ink-3);font-weight:500}
+.hm-leg{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--ink-2)}
+.hm-leg i{display:block;width:150px;height:9px;border-radius:99px;background:linear-gradient(90deg,var(--hm0),var(--hm))}
+.unit-key{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:5px 14px;margin-top:10px;max-height:180px;overflow:auto;padding:8px 10px;border:1px solid var(--stroke);border-radius:12px;background:var(--glass-2);scrollbar-gutter:stable}
+.unit-key-item{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:start;gap:7px;min-width:0;font-size:10.5px;line-height:1.35;color:var(--ink-2)}
+.unit-key-item b{font-size:9.5px;font-variant-numeric:tabular-nums;color:var(--purple);white-space:nowrap}
+.passport-radar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:12px}
+.passport-radar-panel{min-width:0;padding:12px;border:1px solid var(--stroke);border-radius:16px;background:var(--glass-2)}
+.passport-radar-panel h4{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.passport-radar-panel .sub{margin:0 0 6px;font-size:10.5px}
+.chart.summary-radar{height:300px}
+.unit-key.compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 8px;max-height:145px;margin-top:6px;padding:7px}
+.unit-key.compact .unit-key-item{grid-template-columns:28px minmax(0,1fr);gap:5px;font-size:9.5px}
+.unit-key.compact .unit-key-item b{font-size:8.5px}
+.passport-radar-empty{padding:24px 12px;text-align:center;color:var(--ink-3);font-size:13px}
+
+.tbl-wrap{overflow-x:auto;border-radius:18px;border:1px solid var(--stroke);background:var(--glass-2)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:880px}
+th{text-align:left;padding:12px 14px;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);background:var(--grad-soft);border-bottom:1px solid var(--stroke);white-space:nowrap;user-select:none}
+th[data-k]{cursor:pointer}th[data-k]:hover{color:var(--ink)}
+td{padding:11px 14px;border-bottom:1px solid var(--stroke-2);vertical-align:middle}
+tbody tr.click{cursor:pointer;transition:background .12s}tbody tr.click:hover{background:var(--grad-soft)}
+tbody tr:last-child td{border-bottom:0}
+td.nm{font-weight:600}td.mono{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;font-family:var(--f-mono)}
+.b-good{background:var(--ok-soft);color:var(--ok)}.b-bad{background:var(--no-soft);color:var(--no)}.b-gray{background:var(--stroke-2);color:var(--ink-2)}
+.b-good::before{content:'✓';font-family:var(--f);font-weight:800}.b-bad::before{content:'!';font-family:var(--f);font-weight:800}
+.jtag{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:var(--f-mono);font-weight:500}.jtag i{width:9px;height:9px;border-radius:50%}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap;color:var(--ink-2);font-size:13px;font-family:var(--f-mono)}
+.pager div{display:flex;gap:6px}.pager button:disabled{opacity:.4;cursor:not-allowed}
+
+.soal-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px}
+.soal-head select{padding:9px 13px;border-radius:13px;border:1px solid var(--stroke);background:var(--glass-2)}
+.soal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.sc{padding:14px 15px;border-radius:20px;background:var(--glass-2);border:1px solid var(--stroke)}
+.sc .t{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.sc .t em{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--grad-soft);color:var(--purple)}
+.sc .v{font-size:25px;font-weight:800;margin:4px 0 8px;letter-spacing:-.03em;font-family:var(--f-mono);font-feature-settings:'tnum' 1}
+.sc .v small{font-size:12px;font-weight:600;color:var(--ink-3);margin-left:4px;letter-spacing:0}
+.stack{display:flex;height:8px;border-radius:99px;overflow:hidden;gap:2px;background:var(--stroke-2)}.stack i{display:block;height:100%}
+.sc .n{margin-top:7px;font-size:11.5px;color:var(--ink-3)}
+.sc.low .v{color:var(--no)}.sc.high .v{color:var(--ok)}
+.note{padding:13px 16px;border-radius:18px;background:var(--grad-soft);color:var(--ink-2);font-size:13px;margin-bottom:16px;border:1px solid var(--stroke)}
+.scale{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px;font-size:12px;color:var(--ink-2)}.scale span{display:inline-flex;gap:6px;align-items:center}.scale i{width:12px;height:12px;border-radius:4px}
+
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.ck{padding:15px 17px;border-radius:20px;border:1px solid var(--stroke);background:var(--glass-2)}
+.ck .l{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}
+.ck .v{font-size:23px;font-weight:800;margin:4px 0 6px;letter-spacing:-.02em}.ck .d{font-size:12.5px;color:var(--ink-2)}
+
+.modal{position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:20px;background:rgba(20,14,50,.42);backdrop-filter:blur(10px)}
+.modal.open{display:grid}
+.sheet{width:min(780px,100%);max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg),inset 0 1px 0 var(--glass-hi)}
+.sheet-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:22px 24px 14px;border-bottom:1px solid var(--stroke)}
+.sheet-h h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}.sheet-h p{margin:4px 0 0;color:var(--ink-2);font-size:13px}
+.sheet-b{padding:18px 24px 24px}
+.modal.guide-open .sheet{width:min(620px,100%)}
+.chart-guide-card{cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease}
+.chart-guide-card:hover{border-color:var(--purple);box-shadow:var(--shadow-lg),inset 0 1px 0 var(--glass-hi)}
+.chart-guide-card h3{padding-right:150px}
+.chart-guide-card::after{content:'ⓘ Klik untuk panduan';position:absolute;top:15px;right:26px;padding:4px 8px;border:1px solid var(--stroke);border-radius:99px;background:var(--grad-soft);color:var(--ink-2);font-size:10px;font-weight:700;line-height:1.4;pointer-events:none}
+.guide-list{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.guide-list li{position:relative;padding:12px 14px 12px 40px;border:1px solid var(--stroke);border-radius:14px;background:var(--glass-2);color:var(--ink-2);line-height:1.65}
+.guide-list li::before{content:'✓';position:absolute;left:14px;top:12px;color:var(--purple);font-weight:800}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin:0 0 18px}
+.dl div{min-width:0}.dl dt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}.dl dd{margin:2px 0 0;font-weight:600;word-break:break-word}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+.chip{padding:7px 4px;border-radius:12px;text-align:center;font-size:11px;color:var(--ink-2);border:1px dashed var(--stroke)}
+.chip b{display:block;font-size:16px;font-weight:800;color:var(--ink);font-family:var(--f-mono)}
+.chip.on{border:0;color:#fff}.chip.on b{color:#fff}.chip.on.lo,.chip.on.lo b{color:var(--ink)}
+
+.fade{animation:fade .45s ease both}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+@media (max-width:1180px){.g2,.g21,.g12{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){
+  .mesh::after{top:50%;left:50%;bottom:auto;right:auto;width:min(55.77vw,372px);opacity:.145}
+  :root[data-theme="dark"] .mesh::after{opacity:.17}
+  .card::before{top:10px;right:10px;width:5px;height:5px}
+  .app{grid-template-columns:minmax(0,1fr);padding:10px;padding-bottom:calc(86px + env(safe-area-inset-bottom,0px));
+    padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .side{position:fixed;z-index:60;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));top:auto;height:auto;padding:6px;border-radius:26px;flex-direction:row}
+  .brand,.side-foot,.nav .sep{display:none}
+  .nav{flex-direction:row;overflow-x:auto;gap:2px;width:100%;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}
+  .nav button{flex:1 0 auto;flex-direction:column;gap:2px;padding:7px 10px;font-size:10px;min-width:62px;text-align:center;align-items:center}
+  .nav button svg{width:21px;height:21px}
+  .main{padding:0}
+  .mobile-brand{display:flex;align-items:center;gap:10px;margin:2px 4px 12px;min-width:0}
+  .mobile-brand .logo{width:68px;height:34px;flex:0 0 68px}
+  .mobile-brand .logo-fallback{width:68px;height:34px}
+  .mobile-brand b{font-size:15px}
+  .mobile-brand span{font-size:10px}
+  .top h1{font-size:26px}
+  .filters{position:static}
+  .upload-m{display:inline-flex!important}
+}
+.upload-m{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.mesh::after{transform:translate(-50%,-50%)}}
+
+/* Subtitle dengan aksen serif di depan */
+.top p#subtitle::before{
+  content:'—';
+  font-family:var(--f-serif);
+  font-style:italic;
+  color:var(--purple);
+  margin-right:8px;
+  font-size:1.2em;
+  font-weight:400;
+}
+
+/* Underline gradient pada angka KPI */
+.kpi strong{position:relative;display:inline-block}
+.kpi strong::after{
+  content:'';
+  position:absolute;
+  left:0; bottom:-4px;
+  height:3px; width:32px;
+  background:var(--grad);
+  border-radius:99px;
+  opacity:.55;
+}
+
+/* Garis gradient atas pada KPI card */
+.kpi{position:relative;overflow:hidden}
+.kpi::before{
+  content:'';
+  position:absolute;
+  top:0; left:20%; right:20%;
+  height:2px;
+  background:var(--grad);
+  border-radius:99px;
+  opacity:.5;
+  z-index:1;
+}
+
+/* Aksen titik gradient di sudut kartu */
+.card{position:relative}
+.card::before{
+  content:'';
+  position:absolute;
+  top:14px; right:14px;
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--grad);
+  opacity:.3;
+  z-index:2;
+  pointer-events:none;
+}
+
+/* Section label tipografis (siap dipakai) */
+.section-label{
+  font-family:var(--f-mono);
+  font-size:10.5px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  padding:0 4px 10px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-weight:500;
+}
+.section-label::after{
+  content:'';
+  flex:1;
+  height:1px;
+  background:linear-gradient(90deg,var(--stroke),transparent);
+}
+
+/* Empty state lebih hidup */
+.empty::before{
+  content:'∅';
+  display:block;
+  font-family:var(--f-serif);
+  font-size:48px;
+  color:var(--ink-3);
+  opacity:.28;
+  margin-bottom:8px;
+  font-style:italic;
+}
+
+/* Nav item aktif: garis putih di kiri */
+.nav button[aria-current="page"]{position:relative}
+.nav button[aria-current="page"]::before{
+  content:'';
+  position:absolute;
+  left:0; top:22%; bottom:22%;
+  width:3px;
+  background:#fff;
+  border-radius:99px;
+  opacity:.85;
+}
+
+/* Search icon animasi saat focus */
+.field.search svg{transition:transform .25s cubic-bezier(.34,1.56,.64,1),stroke .2s}
+.field.search:focus-within svg{
+  stroke:var(--purple);
+  transform:translateY(-50%) scale(1.15);
+}
+
+/* Tipografi halus */
+h1,h2,h3{text-wrap:balance}
+.kpi strong,.sc .v{letter-spacing:-.04em}
+#loginScreen{position:fixed;inset:0;z-index:9999;display:none;place-items:center;padding:20px;overflow-y:auto;background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 52%,var(--bg3) 100%)}
+#loginScreen.show{display:grid}
+.login-card{width:min(420px,100%);margin:auto;padding:32px 28px;border-radius:var(--r);background:linear-gradient(145deg,var(--glass),var(--glass-2));backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--glass-edge);box-shadow:var(--shadow-lg),inset 0 1px 0 var(--glass-hi)}
+.login-card h2{margin:0 0 4px;font-size:24px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-family:var(--f-display);text-align:center}
+.login-card p.sub{margin:0 0 22px;text-align:center;color:var(--ink-3);font-size:13px}
+.login-card label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+.login-card input{width:100%;padding:11px 14px;margin-bottom:14px;border-radius:13px;border:1px solid var(--stroke);background:var(--glass-2);font-size:14px}
+.login-card input:focus{outline:2px solid var(--purple);outline-offset:1px}
+.login-card button{width:100%;padding:12px;margin-top:4px;border-radius:14px;border:0;background:var(--grad);color:#fff;font-weight:700;font-size:14px;box-shadow:0 10px 22px rgba(141,107,255,.34);cursor:pointer}
+.login-err{display:none;margin:-4px 0 12px;padding:9px 12px;border-radius:11px;background:var(--no-soft);color:var(--no);font-size:12.5px;font-weight:600}
+.login-err.show{display:block}
+#loginForm[hidden],#passwordChangeForm[hidden]{display:none}
+.user-badge{display:flex;align-items:center;gap:8px;padding:9px 12px;margin-bottom:10px;border-radius:13px;background:var(--grad-soft);font-size:12px;font-weight:600;color:var(--ink-2)}
+.user-badge .role-pill{margin-left:auto;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:800;background:var(--grad);color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.user-badge .logout-btn{border:0;background:transparent;color:var(--no);font-weight:700;cursor:pointer;font-size:12px;padding:0}
+[data-role="user"] .admin-only{display:none!important}
+[data-role="guest"] .admin-only{display:none!important}
+[data-role="guest"] .app{visibility:hidden}
+#userBadge[hidden]{display:none}
+</style>
+
+</head>
+<body>
+<div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="loginScreen" class="show" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <h2 id="loginTitle">PETA Login</h2>
+    <p class="sub">Profil Evaluasi dan Tingkat Kompetensi Teknis JF MASN</p>
+    <div class="login-err" id="loginErr" role="alert"></div>
+    <form id="loginForm" autocomplete="off">
+      <label for="loginUser">Username (Nama lengkap)</label>
+      <input id="loginUser" type="text" placeholder="Nama sesuai data" required autocomplete="username">
+      <label for="loginPass">Password</label>
+      <input id="loginPass" type="password" placeholder="Kata sandi" required autocomplete="current-password">
+      <button type="submit">Masuk</button>
+    </form>
+    <div class="login-err" id="changeErr" role="alert"></div>
+    <form id="passwordChangeForm" hidden autocomplete="off">
+      <label for="changeCurrent">Password saat ini (NIP untuk login pertama)</label>
+      <input id="changeCurrent" type="password" required autocomplete="current-password">
+      <label for="changeNew">Password baru (minimal 12 karakter)</label>
+      <input id="changeNew" type="password" minlength="12" required autocomplete="new-password">
+      <label for="changeConfirm">Ulangi password baru</label>
+      <input id="changeConfirm" type="password" minlength="12" required autocomplete="new-password">
+      <button type="submit">Ganti password</button>
+    </form>
+  </div>
+</div>
+<div class="app">
+  <aside class="side glass">
+    <div class="brand"><div class="logo"><img src="peta.png" alt="Logo PETA" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="logo-fallback" role="img" aria-label="Logo PETA" hidden>PETA</span></div><div><b>PETA</b><span>Profil Evaluasi dan Tingkat Kompetensi Teknis JF MASN</span></div></div>
+    <nav class="nav" id="nav" aria-label="Menu utama"></nav>
+    <div class="user-badge" id="userBadge" hidden>
+      <span id="userName">-</span>
+      <span class="role-pill" id="userRole">-</span>
+      <button class="logout-btn" id="logoutBtn" type="button">Keluar</button>
+    </div>
+    <div class="side-foot">
+      <label class="btn primary admin-only" for="fileInput"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Muat Excel</label>
+      <div class="fileinfo" id="fileInfo"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="brand mobile-brand"><div class="logo"><img src="peta.png" alt="Logo PETA" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="logo-fallback" role="img" aria-label="Logo PETA" hidden>PETA</span></div><div><b>PETA</b><span>Profil Evaluasi dan Tingkat Kompetensi Teknis JF MASN</span></div></div>
+    <div class="top">
+      <div><h1 id="title">Ringkasan</h1><p id="subtitle"></p></div>
+      <div class="top-actions">
+        <label class="btn icon-btn upload-m admin-only" for="fileInput" aria-label="Muat Excel"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></label>
+        <button class="btn icon-btn" id="themeBtn" title="Ganti tema" aria-label="Ganti tema"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+        <button class="btn icon-btn" id="fullscreenBtn" title="Masuk layar penuh" aria-label="Masuk layar penuh"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg></button>
+        <button class="btn admin-only" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Ekspor CSV</button>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+    <div class="status" id="status" role="status"></div>
+
+    <section class="filters glass" id="filters" aria-label="Filter">
+      <div class="row">
+        <!-- REVISI: filter jenjang dan jabatan terpisah; instansi dapat dicari dengan mengetik. -->
+        <div class="field search" id="qField"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Cari NIP, nama, atau instansi" autocomplete="off"></div>
+        <div class="field"><select id="fJenjang" aria-label="Jenjang"></select></div>
+        <div class="field"><select id="fJab" aria-label="Jabatan fungsional"></select></div>
+        <div class="field"><select id="fHasil" aria-label="Hasil"></select></div>
+        <div class="field"><select id="fBatch" aria-label="Batch"></select></div>
+        <div class="field"><input id="fInst" type="search" list="instOptions" placeholder="Semua instansi" aria-label="Cari instansi" autocomplete="off"><datalist id="instOptions"></datalist></div>
+        <button class="btn" id="reset">Reset</button>
+        <span class="count-pill" id="countPill"></span>
+      </div>
+    </section>
+
+    <!-- RINGKASAN -->
+    <section id="v-ringkasan">
+      <div class="kpis" id="kpis"></div>
+      <!-- REVISI #3: Grafik capaian per jenjang -->
+      <div class="card glass" style="margin-bottom:16px">
+        <h3>Capaian per Jenjang Jabatan</h3>
+        <p class="sub">Perbandingan Memenuhi dan Belum Memenuhi per jenjang</p>
+        <div class="chart"><canvas id="cJtCapaian"></canvas></div>
+        <div class="legend" id="lgJtCapaian"></div>
+      </div>
+      <div class="grid g2">
+        <div class="card glass"><h3>Capaian Kompetensi</h3><p class="sub">Memenuhi dan belum memenuhi pada data terfilter</p><div class="chart"><canvas id="cDonut"></canvas></div></div>
+        <div class="card glass"><h3>Distribusi Jabatan</h3><p class="sub">Jumlah peserta per jenjang jabatan</p><div class="chart"><canvas id="cDist"></canvas></div></div>
+      </div>
+      <div class="grid g12">
+        <div class="card glass radar-summary-card">
+          <h3>Rata-rata Nilai Unit Kompetensi per Paspor</h3>
+          <p class="sub">Setiap paspor memiliki grafik terpisah. Angka pada sumbu merujuk ke daftar unit kompetensi di bawahnya.</p>
+          <div class="passport-radar-grid" id="summaryRadars"></div>
+          <div class="chart-note">
+            <p>Setiap grafik menunjukkan rata-rata nilai 0–5 untuk satu paspor jabatan. Nomor sumbu dicocokkan dengan nama kompetensi pada daftar tepat di bawah grafik.</p>
+            <p>Nilai merupakan rata-rata jawaban peserta yang mengerjakan unit terkait, bukan nilai akhir. Bandingkan paspor yang berbeda dengan memperhatikan nama unitnya; nomor soal yang sama belum tentu memiliki nama kompetensi yang sama.</p>
+          </div>
+        </div>
+        <div class="stackcol">
+          <div class="card glass"><h3>Profil level per jabatan</h3><p class="sub">Persentase peserta pada tiap level dominan</p><div class="chart sm"><canvas id="cLvRadar"></canvas></div><div class="legend" id="lgLv"></div></div>
+          <div class="card glass"><div class="rank" id="rank"></div></div>
+        </div>
+      </div>
+      <div class="card glass"><h3>Heatmap Unit Kompetensi × Paspor Jabatan</h3><p class="sub">Rata-rata nilai per unit kompetensi. Warna lebih pekat berarti nilai lebih tinggi.</p><div id="hmA"></div></div>
+      <div class="card glass"><h3>Heatmap sebaran jawaban per unit kompetensi</h3><p class="sub">Warna menunjukkan nilai jawaban: 0 paling muda, 5 paling pekat. Arahkan kursor ke sel untuk melihat persentase peserta.</p><div id="hmB"></div></div>
+      <div class="grid g2">
+        <div class="card glass"><h3>Sebaran nilai akhir</h3><p class="sub">Jumlah peserta per rentang nilai, dibagi menurut hasil</p><div class="chart"><canvas id="cHist"></canvas></div><div class="legend" id="lgHist"></div></div>
+        <div class="card glass"><h3>Durasi pengerjaan dan nilai</h3><p class="sub" id="subScatter"></p><div class="chart"><canvas id="cScatter"></canvas></div><div class="legend" id="lgSc"></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="card glass"><h3>Peserta per hari pengerjaan</h3><p class="sub">Berdasarkan tanggal mulai</p><div class="chart"><canvas id="cDay"></canvas></div></div>
+        <div class="card glass"><h3>10 instansi dengan peserta terbanyak</h3><p class="sub">Dibagi menurut hasil pemenuhan</p><div class="chart"><canvas id="cInst"></canvas></div><div class="legend" id="lgInst"></div></div>
+      </div>
+      <div class="card glass"><h3>Heatmap waktu pengerjaan</h3><p class="sub">Jumlah peserta yang memulai pada tiap tanggal dan jam</p><div id="hmC"></div></div>
+      <div class="grid g12">
+        <div class="card glass"><h3>Heatmap jenjang jabatan × level dominan</h3><p class="sub">Jumlah peserta</p><div id="hmD"></div></div>
+        <div class="card glass"><h3>Pemenuhan per jenjang jabatan</h3><p class="sub">Bar menunjukkan porsi yang memenuhi</p><div class="bars" id="jtBars"></div></div>
+      </div>
+    </section>
+
+    <!-- DATA MENGERJAKAN -->
+    <section id="v-peserta" hidden><div class="card glass" id="tblPeserta"></div></section>
+
+    <!-- RAPOT -->
+    <section id="v-paspor" hidden>
+      <div class="kpis" id="pKpis"></div>
+      <div class="grid g12">
+        <div class="card glass"><h3>Unit Kompetensi</h3><p class="sub" id="pRadarSub"></p><div class="chart xl"><canvas id="pRadar"></canvas></div><div id="pRadarKey"></div></div>
+        <div class="stackcol">
+          <div class="card glass"><h3>Sebaran level dominan</h3><p class="sub">Jumlah peserta per level</p><div class="chart sm"><canvas id="pLevel"></canvas></div></div>
+          <div class="card glass"><div class="rank" id="pRank"></div></div>
+        </div>
+      </div>
+      <div class="card glass"><h3>Nilai per Unit Kompetensi</h3><p class="sub">Skala 0 sampai 5</p><div class="chart"><canvas id="pBar"></canvas></div><div id="pBarKey"></div></div>
+      <div class="card glass"><h3>Heatmap sebaran jawaban per unit kompetensi</h3><p class="sub">Persentase peserta pada nilai 0 sampai 5</p><div id="pHm"></div></div>
+      <div class="card glass"><h3>Peserta</h3><p class="sub" style="margin-bottom:12px">Klik baris untuk melihat nilai per unit kompetensi</p><div id="tblPaspor"></div></div>
+    </section>
+
+    <!-- UNIT KOMPETENSI -->
+    <section id="v-soal" hidden>
+      <div class="note" id="soalNote"></div>
+      <div class="card glass"><h3>Nilai per Unit Kompetensi</h3><p class="sub">Skala 0 sampai 5. Nomor di sumbu merujuk ke daftar nama unit kompetensi di bawah grafik.</p><div class="chart"><canvas id="cSoal"></canvas></div><div id="cSoalKey"></div></div>
+      <div class="card glass">
+        <div class="soal-head"><div><h3>Daftar Unit Kompetensi</h3><p class="sub" style="margin:2px 0 0" id="soalSub"></p></div>
+          <select id="soalSort" aria-label="Urutkan unit kompetensi"><option value="no">Urut nomor unit</option><option value="asc">Urut nilai terendah</option><option value="desc">Urut nilai tertinggi</option></select></div>
+        <div class="scale" id="soalScale"></div>
+        <div class="soal-grid" id="soalGrid"></div>
+      </div>
+    </section>
+
+    <!-- KUALITAS DATA -->
+    <section id="v-data" hidden>
+      <div class="card glass"><h3>Pemeriksaan dataset</h3><p class="sub">Ringkasan seluruh data pada file, tidak terpengaruh filter dashboard</p><div class="checks" id="checks"></div></div>
+      <div class="grid g2">
+        <div class="card glass"><h3>Jabatan dan jumlah Unit Kompetensi</h3><p class="sub">Jumlah unit mengikuti pemetaan paspor dan kolom soal yang tersedia pada data.</p><div class="tbl-wrap"><table style="min-width:420px"><thead><tr><th>Jabatan</th><th>Peserta</th><th>Unit dipakai</th><th>Unit sebagian</th><th>Soal lain</th></tr></thead><tbody id="jabTbl"></tbody></table></div></div>
+        <div class="card glass"><h3>Catatan temuan</h3><p class="sub">Hal yang perlu diketahui sebelum membaca angka</p><div id="findings"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="modal" aria-modal="true" role="dialog" aria-labelledby="mName" aria-describedby="mSub"><div class="sheet glass"><div class="sheet-h"><div><h2 id="mName"></h2><p id="mSub"></p></div><button class="btn icon-btn" id="mClose" aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="sheet-b" id="mBody"></div></div></div>
+
+<script>
+const EMBEDDED = null;
+/* ================= util ================= */
+const $ = s => document.querySelector(s);
+const fmt  = n => (n==null||isNaN(n)) ? '-' : Number(n).toLocaleString('id-ID');
+const fmt1 = n => (n==null||isNaN(n)) ? '-' : Number(n).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmt2 = n => (n==null||isNaN(n)) ? '-' : Number(n).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const title = s => String(s||'').toLowerCase().replace(/(^|[\s.'(-])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase());
+const LV = i => css('--lv'+Math.max(0,Math.min(5,i)));
+const rgba = (hex,a) => { const h=hex.replace('#',''); return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; };
+const avgOf = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+
+// REVISI #6: interpolasi warna RGB dua hex
+function mixColor(c1, c2, t) {
+  const p = c => {
+    const h = c.replace('#', '');
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16)
+    ];
+  };
+  const [r1, g1, b1] = p(c1);
+  const [r2, g2, b2] = p(c2);
+  const r = Math.round(r1 * (1 - t) + r2 * t);
+  const g = Math.round(g1 * (1 - t) + g2 * t);
+  const b = Math.round(b1 * (1 - t) + b2 * t);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+// REVISI #6: gradasi kontinu dari warna belum memenuhi, melalui ungu, ke memenuhi
+function gradientColor(value, min, max) {
+  if (max === min) return css('--purple');
+  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  if (t < 0.5) return mixColor(css('--no'), css('--purple'), t * 2);
+  return mixColor(css('--purple'), css('--ok'), (t - 0.5) * 2);
+}
+
+// REVISI #1: Target kompetensi per jenjang jabatan
+const TARGET_MAP = {
+  'utama':   5,
+  'madya':   4,
+  'muda':    3,
+  'pertama': 2,
+  'default': 4
+};
+
+// REVISI #1: Ambil target dari string jenjang (case-insensitive, partial match)
+function getTarget(jenjang) {
+  if (!jenjang) return TARGET_MAP.default;
+  const s = String(jenjang).toLowerCase();
+  for (const key in TARGET_MAP) {
+    if (key !== 'default' && s.includes(key)) return TARGET_MAP[key];
+  }
+  return TARGET_MAP.default;
+}
+
+// REVISI #1: Resolve target dari filter jenjang atau data terfilter
+// - Jika filter jenjang aktif → target jenjang itu
+// - Jika tidak dan hanya 1 jenjang di data → target jenjang itu
+// - Jika multi-jenjang → return null (target harus dihitung per series)
+function resolveTarget(rows) {
+  if (state.f.jenjang) return getTarget(state.f.jenjang);
+  const jenjangs = [...new Set(rows.map(r => r.jenjang).filter(Boolean))];
+  if (jenjangs.length === 1) return getTarget(jenjangs[0]);
+  return null;
+}
+
+let DATA = null, charts = {};
+const AUTH = {
+  current: null,
+  isAdmin(){ return !!this.current && this.current.role === 'admin'; },
+  isUser(){ return !!this.current && this.current.role === 'user'; }
+};
+const VIEW_ACCESS = { admin:['ringkasan','peserta','paspor','soal','data'], user:['ringkasan','soal'] };
+function canAccess(view){
+  if(!AUTH.current) return false;
+  return (VIEW_ACCESS[AUTH.current.role]||[]).includes(view);
+}
+const state = { view:'ringkasan', f:{jab:'',jenjang:'',hasil:'',batch:'',inst:'',q:''}, sort:{k:'nama',dir:1}, pages:{}, per:15, soalSort:'no' };
+
+let UNIT_NAMES = {
+  Analis: {
+    1:'Manajemen ASN',
+    2:'Tata Kelola Lembaga Pemerintahan',
+    3:'Struktur Kelembagaan',
+    4:'Proses Bisnis Lembaga Pemerintahan',
+    5:'Analisis deskriptif',
+    6:'Analisis diagnostik',
+    7:'Analisis prediktif',
+    8:'Analisis preskriptif',
+    9:'Penyajian data deskriptif',
+    10:'Penyajian data diagnostik',
+    11:'Penyajian data prediktif',
+    12:'Penyajian data preskriptif',
+    13:'Perencanaan Kebutuhan Manajemen ASN',
+    14:'Analisis Beban Kerja',
+    15:'Analisis Jabatan',
+    16:'Peta Jabatan',
+    17:'Pengadaan Aparatur Sipil Negara',
+    18:'Penataan Pegawai Aparatur Sipil Negara',
+    19:'Pemberhentian Aparatur Sipil Negara',
+    20:'Pengelolaan Talenta ASN',
+    21:'Data Kompetensi dan Potensi',
+    22:'Rencana Pengembangan Karier ASN',
+    23:'Pola Karier',
+    24:'Jalur Karier',
+    25:'Pangkat & Jabatan',
+    26:'Pengembangan Kompetensi ASN',
+    27:'Strategi Pengembangan Kompetensi',
+    28:'Pengelolaan Kinerja ASN',
+    29:'Penghasilan ASN',
+    30:'Penghargaan Motivatif',
+    31:'Cuti',
+    32:'Jaminan Sosial',
+    33:'Bantuan Hukum',
+    34:'Penyelenggaraan Disiplin ASN',
+    35:'Pembinaan Disiplin ASN',
+    36:'Core Value',
+    37:'Budaya Kerja Organisasi',
+    38:'Citra Institusi',
+    39:'Penataan Organisasi',
+    40:'Pengembangan Organisasi',
+    41:'RB danZI',
+    42:'Pengelolaan Akuntabilitas Kinerja Organisasi'
+  },
+  Asesor: {
+    1:'Manajemen ASN',
+    2:'Tata Kelola Lembaga Pemerintahan',
+    3:'Struktur Kelembagaan',
+    4:'Proses Bisnis Lembaga Pemerintahan',
+    5:'Perencanaan Asesmen',
+    6:'Persiapan Asesmen',
+    7:'Pelaksanaan Asesmen',
+    8:'Pemantauan dan Evaluasi Asesmen'
+  },
+  Auditor: {
+    1:'Manajemen ASN',
+    2:'Tata Kelola Lembaga Pemerintahan',
+    3:'Perencanaan Audit MAS',
+    4:'Pelaksanaan Audit MASN',
+    5:'Penyusunan Laporan & Tindak Lanjut Audit MASN'
+  }
+};
+function passportKey(jabatan){
+  const name=String(jabatan||'').trim().toLowerCase();
+  if(/\banalis\b/.test(name)) return 'Analis';
+  if(/\basesor\b/.test(name)) return 'Asesor';
+  if(/\bauditor\b/.test(name)) return 'Auditor';
+  return null;
+}
+function getUnitName(jabatan,nomorSoal){
+  const passport=passportKey(jabatan);
+  return UNIT_NAMES[passport]?.[nomorSoal]||'Unit Kompetensi (Soal '+nomorSoal+')';
+}
+function unitDisplayName(info,includePassport){
+  const name=getUnitName(info.jab,info.no);
+  return includePassport?name+' · '+pasporName(info.jab):name;
+}
+function mappedQuestionNos(jabatan){
+  const passport=passportKey(jabatan);
+  return passport?Object.keys(UNIT_NAMES[passport]).map(Number):[];
+}
+
+/* ================= parser Excel (sheet pertama, blok utama) ================= */
+function parseWorkbook(wb){
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true,cellDates:true});
+  const hi = aoa.findIndex(r=>r && r.some(c=>String(c).trim()==='NIP') && r.some(c=>String(c).trim()==='Nama'));
+  if(hi<0) throw new Error('Baris header (NIP, Nama) tidak ditemukan pada sheet "'+wb.SheetNames[0]+'".');
+  const hdr = aoa[hi].map(c=>c==null?'':String(c).trim());
+  const first = {}; hdr.forEach((h,i)=>{ if(h && first[h]===undefined) first[h]=i; });
+  const miss = ['NIP','Nama','Jabatan','Jenjang Jabatan','Nilai','Hasil'].filter(n=>first[n]===undefined);
+  if(miss.length) throw new Error('Kolom wajib tidak ada: '+miss.join(', '));
+  const soalCols = []; for(let n=1; first['Soal '+n]!==undefined; n++) soalCols.push(first['Soal '+n]);
+  const chkKey = Object.keys(first).find(k=>/^Check/i.test(k));
+  const g = (r,k)=> first[k]===undefined ? null : r[first[k]];
+  const str = v => v==null ? '' : String(v).trim();
+  const num = v => (v==null||v==='') ? null : (isNaN(parseFloat(v)) ? null : parseFloat(v));
+  const p2 = n=>String(n).padStart(2,'0');
+  const iso = v => (v instanceof Date && !isNaN(v)) ? v.getFullYear()+'-'+p2(v.getMonth()+1)+'-'+p2(v.getDate())+'T'+p2(v.getHours())+':'+p2(v.getMinutes())+':'+p2(v.getSeconds()) : null;
+  const rows = [];
+  for(let i=hi+1;i<aoa.length;i++){
+    const r = aoa[i]||[]; const nip=str(g(r,'NIP')), nama=str(g(r,'Nama'));
+    if(!nip && !nama) continue;
+    const nilai=num(g(r,'Nilai')), ld=num(g(r,'Level Dominan')), dup=num(g(r,'DUPLIKAT'));
+    rows.push({ sourceRow:i+1, nip, nama, jab:str(g(r,'Jabatan')), jt:str(g(r,'Jenjang Jabatan')), jenjang:str(g(r,'Jenjang')), inst:str(g(r,'INSTANSI')),
+      nilai:nilai==null?null:Math.round(nilai*100)/100, ld:ld==null?null:Math.round(ld), hasil:str(g(r,'Hasil')), batch:str(g(r,'Batch')),
+      mulai:iso(g(r,'Mulai')), sel:iso(g(r,'Selesai')), dup:dup==null?null:Math.round(dup), chk:chkKey?str(r[first[chkKey]]):'',
+      s:soalCols.map(c=>{const v=num(r[c]); return v==null?null:Math.round(v);}) });
+  }
+  if(!rows.length) throw new Error('Tidak ada baris data peserta pada sheet.');
+  return { file:'', soalCount:soalCols.length, rows };
+}
+
+/* ================= dataset ================= */
+function prepare(d){
+  /* Peserta yang tercatat di Excel tetapi tidak mengerjakan ujian (kolom Check = "Tidak Mengerjakan", atau tanpa waktu mulai dan selesai
+     dengan nilai 0) dikeluarkan dari semua perhitungan. Jumlahnya tetap ditampilkan di Kualitas Data. */
+  const noExam = r => /tidak mengerjakan/i.test(r.chk||'') || (!r.mulai && !r.sel && !(r.nilai>0));
+  d.rowsAll = d.rows.length; d.rowsSource = d.rows.slice(); d.excluded = d.rows.filter(noExam); d.rows = d.rows.filter(r=>!noExam(r));
+  d.rows.forEach(r=>{
+    r.nama = title(r.nama); r.jab = r.jab || (r.jt||'-').replace(/\s+Ahli.*$/,'');
+    r.dur = (r.mulai && r.sel) ? Math.round((new Date(r.sel)-new Date(r.mulai))/6000)/10 : null;
+    r.day = r.mulai ? r.mulai.slice(0,10) : null; r.hour = r.mulai ? +r.mulai.slice(11,13) : null;
+  });
+  const cnt = j => d.rows.filter(r=>r.jab===j).length;
+  d.jabs = [...new Set(d.rows.map(r=>r.jab))].sort((a,b)=>cnt(b)-cnt(a));
+  d.jts = [...new Set(d.rows.map(r=>r.jt).filter(Boolean))].sort();
+  d.hasils = [...new Set(d.rows.map(r=>r.hasil).filter(Boolean))];
+  d.batches = [...new Set(d.rows.map(r=>r.batch).filter(Boolean))].sort();
+  d.insts = [...new Set(d.rows.map(r=>r.inst).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+  /* Hanya soal yang dipetakan untuk paspor dan memiliki kolom sumber yang tersedia yang digunakan. */
+  d.active = {};
+  d.jabs.forEach(j=>{
+    const passport=passportKey(j), mapped=passport?new Set(mappedQuestionNos(j)):null;
+    const members=d.rows.filter(r=>r.jab===j);
+    d.active[j]=[...Array(d.soalCount)].map((_,i)=>mapped?mapped.has(i+1):members.some(r=>r.s[i]!=null&&r.s[i]>0));
+  });
+  return d;
+}
+const sv = (r,i) => (DATA.active[r.jab] && DATA.active[r.jab][i]) ? r.s[i] : null;
+function ranges(nums){ const out=[]; let a=null,b=null; nums.forEach(n=>{ if(a===null){a=b=n;} else if(n===b+1){b=n;} else {out.push(a===b?''+a:a+'-'+b); a=b=n;} }); if(a!==null) out.push(a===b?''+a:a+'-'+b); return out.join(', '); }
+const JVARS=['--j1','--j2','--j3'];
+const jColor = jab => css(JVARS[Math.max(0,DATA.jabs.indexOf(jab))%3]);
+// REVISI: konsistenkan penamaan seluruh tampilan paspor.
+const pasporName = jab => 'Paspor ' + String(jab).split(' ')[0];
+
+function filtered(extra){
+  const f = Object.assign({},state.f,extra||{}); const q=(state.view==='ringkasan'?'':f.q).trim().toLowerCase();
+  // REVISI: jenjang berasal dari kolom jenjang, sedangkan jabatan berasal dari kolom jab.
+  const sessionNip=AUTH.isUser()?AUTH.current.nip:null;
+  return DATA.rows.filter(r=>(!sessionNip||String(r.nip)===String(sessionNip))&&(!f.jab||r.jab===f.jab)&&(!f.jenjang||r.jenjang===f.jenjang)&&(!f.hasil||r.hasil===f.hasil)&&(!f.batch||r.batch===f.batch)&&(!f.inst||r.inst===f.inst)&&
+    (!q || (r.nip+' '+r.nama+' '+r.inst+' '+r.jab).toLowerCase().includes(q)));
+}
+function stats(rows){
+  const mem=rows.filter(r=>r.hasil==='Memenuhi').length, bel=rows.filter(r=>r.hasil==='Belum Memenuhi').length;
+  return { total:rows.length, nip:new Set(rows.map(r=>r.nip).filter(Boolean)).size, mem, bel, pct:rows.length?mem/rows.length*100:null,
+    avg:avgOf(rows.map(r=>r.nilai).filter(v=>v!=null)), inst:new Set(rows.map(r=>r.inst).filter(Boolean)).size, dur:avgOf(rows.map(r=>r.dur).filter(v=>v!=null&&v>0)) };
+}
+function soalInfo(rows){
+  const out=[];
+  const jabs=DATA.jabs.filter(j=>rows.some(r=>r.jab===j));
+  jabs.forEach(j=>{
+    const members=rows.filter(r=>r.jab===j);
+    for(let i=0;i<DATA.soalCount;i++){
+      if(!(DATA.active[j]&&DATA.active[j][i])) continue;
+      let c=0,s=0; const dist=[0,0,0,0,0,0];
+      members.forEach(r=>{ const v=r.s[i]; if(v!=null){c++; s+=v; dist[Math.max(0,Math.min(5,v))]++;} });
+      if(c) out.push({jab:j,no:i+1,key:j+'|'+(i+1),count:c,base:members.length,avg:s/c,dist,partial:c<members.length*0.5});
+    }
+  });
+  return out;
+}
+
+/* ================= chart helpers ================= */
+function mk(id,cfg){ const el=document.getElementById(id); if(!el) return; if(charts[id]) charts[id].destroy(); const pl=[]; if(cfg.valueLabels) pl.push(barValuesPlugin()); if(cfg.center) pl.push(centerTextPlugin(cfg.center)); cfg.plugins=pl; charts[id]=new Chart(el.getContext('2d'),cfg); }
+function chartBase(){ Chart.defaults.font.family=css('--f')||'system-ui'; Chart.defaults.font.size=12; Chart.defaults.color=css('--ink-2'); }
+const tip=()=>({backgroundColor:'rgba(24,20,52,.92)',titleColor:'#fff',bodyColor:'#fff',padding:11,cornerRadius:12,boxPadding:5,borderColor:'rgba(255,255,255,.14)',borderWidth:1});
+const axis=ex=>Object.assign({grid:{color:css('--stroke'),drawTicks:false},border:{display:false},ticks:{color:css('--ink-3'),padding:8}},ex||{});
+const grad=(c1,c2,horiz)=>ctx=>{ const a=ctx.chart.chartArea; if(!a) return c1; const g=ctx.chart.ctx.createLinearGradient(horiz?a.left:0,horiz?0:a.bottom,horiz?a.right:0,horiz?0:a.top); g.addColorStop(0,c1); g.addColorStop(1,c2); return g; };
+const barValuesPlugin=()=>({id:'barValuesInline',afterDatasetsDraw(ch){ const {ctx}=ch, horiz=ch.options.indexAxis==='y';
+  ctx.save(); ctx.fillStyle=css('--ink'); ctx.font='700 12px '+css('--f'); ctx.textBaseline='middle'; ctx.textAlign=horiz?'left':'center';
+  ch.getDatasetMeta(0).data.forEach((b,i)=>{ const v=ch.data.datasets[0].data[i]; if(!v) return; horiz?ctx.fillText(fmt(v),b.x+8,b.y):ctx.fillText(fmt(v),b.x,b.y-10); }); ctx.restore(); }});
+const centerTextPlugin=o=>({id:'centerTextInline',afterDraw(ch){ const a=ch.chartArea,{ctx}=ch; if(!a) return; const cx=(a.left+a.right)/2, cy=(a.top+a.bottom)/2;
+  ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=css('--ink'); ctx.font='800 32px '+css('--f'); ctx.fillText(o.big,cx,cy-8);
+  ctx.fillStyle=css('--ink-3'); ctx.font='600 12px '+css('--f'); ctx.fillText(o.small,cx,cy+18); ctx.restore(); }});
+// REVISI: skala radar dimulai dari nol dan menetapkan orientasi awal secara konsisten.
+const radarScale=(max,step,size)=>({r:{min:0,max,startAngle:0,ticks:{stepSize:step,display:true,backdropColor:'transparent',color:css('--ink-3'),font:{size:10}},grid:{color:css('--stroke')},angleLines:{color:css('--stroke')},pointLabels:{color:css('--ink-2'),font:{size,weight:'600'}}}});
+const legendHTML = items => items.map(i=>'<span><i style="background:'+i[1]+'"></i>'+esc(i[0])+'</span>').join('');
+const passportCode = jab => ({Analis:'A',Asesor:'AS',Auditor:'AU'}[passportKey(jab)]||'??');
+const unitCode = info => passportCode(info.jab)+String(info.no).padStart(2,'0');
+function unitKeyHTML(info,compact=false){
+  if(!info.length) return '';
+  const includePassport=new Set(info.map(i=>i.jab)).size>1;
+  return '<div class="unit-key'+(compact?' compact':'')+'">'+info.map(i=>'<div class="unit-key-item"><b>'+unitCode(i)+'</b><span>'+esc(getUnitName(i.jab,i.no))+(includePassport?' · '+esc(pasporName(i.jab)):'')+'</span></div>').join('')+'</div>';
+}
+
+/* ================= heatmap ================= */
+function heatGrid({cols,rows,get,fmtv,cw=30,lw=150,domain,unit,showValues=true,subvalue,legendLabels,cellStyle,legendStyle}){
+  let vals=[]; rows.forEach(r=>cols.forEach(c=>{ const v=get(r,c); if(v!=null) vals.push(v); }));
+  if(!vals.length) return '<div class="empty">Tidak ada data.</div>';
+  const lo=domain?domain[0]:Math.min(...vals), hi=domain?domain[1]:Math.max(...vals), span=(hi-lo)||1;
+  let h='<div class="hm-wrap"><div class="hm-row" style="--lw:'+lw+'px;--cw:'+cw+'px;--n:'+cols.length+'"><div></div>'+cols.map(c=>'<div class="hm-h" title="'+esc(c.title||c.label)+'">'+esc(c.label)+'</div>').join('')+'</div>';
+  rows.forEach(r=>{ h+='<div class="hm-row" style="--lw:'+lw+'px;--cw:'+cw+'px;--n:'+cols.length+'"><div class="hm-l" title="'+esc(r.label)+'">'+esc(r.label)+'</div>'+cols.map(c=>{
+    const v=get(r,c); if(v==null) return '<div class="hm-c nil">-</div>';
+    const p=Math.round(30+((v-lo)/span)*70), style=cellStyle?cellStyle(r,c,v):'background:color-mix(in srgb,var(--hm) '+p+'%,var(--hm0));color:'+(p>62?'#fff':'var(--ink)');
+    return '<div class="hm-c" style="'+style+'" title="'+esc(r.label)+' · '+esc(c.label)+': '+(fmtv?fmtv(v):v)+(unit||'')+'">'+(showValues?(fmtv?fmtv(v):v):'')+(subvalue?'<small class="hm-sub">'+subvalue(r,c,v)+'</small>':'')+'</div>'; }).join('')+'</div>'; });
+  return h+'</div><div class="hm-leg"><span>'+(legendLabels?legendLabels[0]:(fmtv?fmtv(lo):lo))+'</span><i'+(legendStyle?' style="background:'+legendStyle+'"':'')+'></i><span>'+(legendLabels?legendLabels[1]:(fmtv?fmtv(hi):hi))+'</span></div>';
+}
+const soalCols = info => info.map(i=>({label:unitCode(i),title:unitDisplayName(i,true),no:i.no,jab:i.jab,key:i.key}));
+function heatSebaran(id,rows){
+  const info=soalInfo(rows), el=document.getElementById(id); if(!el) return;
+  if(!info.length){ el.innerHTML='<div class="empty">Data unit kompetensi belum tersedia.</div>'; return; }
+  const byKey={}; info.forEach(i=>byKey[i.key]=i);
+  // REVISI: warna mengodekan skor 0–5 dan intensitas persentase; sel tanpa angka, skala di bawah.
+  el.innerHTML = heatGrid({cols:soalCols(info),rows:[5,4,3,2,1,0].map(n=>({label:String(n),n})),cw:32,lw:46,domain:[0,100],showValues:false,legendLabels:['0','5'],
+    legendStyle:'linear-gradient(90deg,var(--lv0),var(--lv1),var(--lv2),var(--lv3),var(--lv4),var(--lv5))',
+    cellStyle:(r,c,v)=>'background:var(--lv'+r.n+');color:'+(r.n>=4?'#fff':'#302448'),
+    get:(r,c)=>{ const i=byKey[c.key]; return i? i.dist[r.n]/i.count*100 : null; }, fmtv:v=>Math.round(v)+'', unit:'%'})+unitKeyHTML(info);
+}
+
+/* ================= tabel peserta ================= */
+const COLS=[['nama','Nama'],['nip','NIP'],['jab','Jabatan'],['jt','Jenjang Jabatan'],['inst','Instansi'],['nilai','Nilai'],['ld','Level'],['hasil','Hasil'],['batch','Batch']];
+function renderTable(id,rows){
+  const el=document.getElementById(id); if(!el) return;
+  const {k,dir}=state.sort;
+  const sorted=rows.slice().sort((a,b)=>{ const x=a[k],y=b[k]; if(x==null) return 1; if(y==null) return -1; return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'id'))*dir; });
+  const pages=Math.max(1,Math.ceil(sorted.length/state.per)); const pg=Math.min(state.pages[id]||1,pages); state.pages[id]=pg;
+  const s=(pg-1)*state.per, part=sorted.slice(s,s+state.per);
+  const body = part.length ? part.map(r=>{ const i=DATA.rows.indexOf(r);
+    return '<tr class="click" data-i="'+i+'"><td class="nm">'+esc(r.nama)+'</td><td class="mono">'+esc(r.nip)+'</td><td><span class="jtag"><i style="background:'+jColor(r.jab)+'"></i>'+esc(r.jab)+'</span></td><td>'+esc(r.jt)+'</td><td>'+esc(r.inst||'-')+'</td><td class="mono">'+fmt2(r.nilai)+'</td><td class="mono">'+(r.ld==null?'-':r.ld)+'</td><td><span class="badge '+(r.hasil==='Memenuhi'?'b-good':r.hasil==='Belum Memenuhi'?'b-bad':'b-gray')+'">'+esc(r.hasil||'-')+'</span></td><td>'+esc(r.batch||'-')+'</td></tr>'; }).join('')
+    : '<tr><td colspan="'+COLS.length+'" class="empty">Tidak ada peserta yang cocok dengan filter ini.</td></tr>';
+  el.innerHTML='<div class="tbl-wrap"><table><thead><tr>'+COLS.map(c=>'<th data-k="'+c[0]+'">'+c[1]+(k===c[0]?' '+(dir>0?'↑':'↓'):'')+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>'+
+    '<div class="pager"><span>'+(sorted.length?'Menampilkan '+fmt(s+1)+' sampai '+fmt(s+part.length)+' dari '+fmt(sorted.length)+' · halaman '+pg+' dari '+pages:'')+'</span><div><button class="btn" data-pg="'+id+'" data-d="-1" '+(pg<=1?'disabled':'')+'>Sebelumnya</button><button class="btn" data-pg="'+id+'" data-d="1" '+(pg>=pages?'disabled':'')+'>Berikutnya</button></div></div>';
+}
+
+/* ================= komponen umum ================= */
+function kpiHTML(st,rows){
+  if(!rows.length) return '<div class="card glass empty" style="grid-column:1/-1">Tidak ada peserta yang cocok dengan filter ini. Ubah atau reset filter.</div>';
+  // REVISI: KPI durasi rata-rata dihapus dari ringkasan.
+  const k=[['Total Peserta',fmt(st.nip),'NIP berbeda',''],['Memenuhi',fmt(st.mem),fmt1(st.pct)+'% dari peserta','good'],
+    ['Belum memenuhi',fmt(st.bel),fmt1(st.bel/st.total*100)+'% dari peserta','bad'],['Rata-rata nilai',st.avg==null?'-':fmt2(st.avg),'Skala 0 sampai 5',''],
+    ['Instansi',fmt(st.inst),'Instansi berbeda','']];
+  return k.map(x=>'<div class="kpi glass '+x[3]+'"><label>'+x[0]+'</label><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div>').join('');
+}
+function rankHTML(rows){
+  const info=soalInfo(rows).filter(i=>!i.partial); if(info.length<2) return '<div class="empty">Belum cukup data unit kompetensi.</div>';
+  const s=info.slice().sort((a,b)=>b.avg-a.avg), top=s.slice(0,6), low=s.slice(-6).reverse();
+  const line=i=>'<div class="rk"><span>'+esc(getUnitName(i.jab,i.no))+'</span><div class="b"><i style="width:'+(i.avg/5*100)+'%"></i></div><span>'+fmt2(i.avg)+'</span></div>';
+  return '<h4>'+top.length+' unit kompetensi dengan nilai tertinggi</h4>'+top.map(line).join('')+'<h4 style="margin-top:12px">'+low.length+' unit kompetensi dengan nilai terendah</h4>'+low.map(line).join('');
+}
+// REVISI #4: Ranking unit per paspor jabatan
+function rankHTMLPerJabatan(rows) {
+  const preferred = ['Analis', 'Asesor', 'Auditor'];
+  const blocks = [];
+
+  preferred.forEach(prefix => {
+    const jab = DATA.jabs.find(j =>
+      j.toLowerCase().includes(prefix.toLowerCase()) &&
+      rows.some(r => r.jab === j));
+    if (!jab) return;
+
+    const rr = rows.filter(r => r.jab === jab);
+    const info = soalInfo(rr).filter(i => !i.partial);
+    if (info.length < 2) return;
+
+    const sorted = info.slice().sort((a, b) => b.avg - a.avg);
+    const top = sorted.slice(0, 6);
+    const low = sorted.slice(-6).reverse();
+    const color = jColor(jab);
+
+    const row = (i, tone) =>
+      '<div class="rk"><span>' + esc(getUnitName(jab,i.no)) + '</span>' +
+      '<div class="b"><i style="width:' + (i.avg / 5 * 100) +
+      '%;background:' + (tone === 'top' ? css('--ok') : css('--no')) +
+      '"></i></div>' +
+      '<span>' + fmt2(i.avg) + '</span></div>';
+
+    blocks.push(
+      '<h4 style="color:' + color + ';margin-top:12px">Paspor ' + prefix + ' — ' + top.length + ' Tertinggi</h4>' +
+      top.map(i => row(i, 'top')).join('') +
+      '<h4 style="margin-top:10px">Paspor ' + prefix + ' — ' + low.length + ' Terendah</h4>' +
+      low.map(i => row(i, 'low')).join('')
+    );
+  });
+
+  return blocks.length
+    ? blocks.join('')
+    : '<div class="empty">Belum cukup data unit kompetensi.</div>';
+}
+function radarSoal(id, rows) {
+  const info = soalInfo(rows);
+  if (!info.length) {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    return null;
+  }
+  chartBase();
+  const preferred = ['Analis', 'Asesor', 'Auditor'];
+  const jabs = preferred
+    .map(prefix => DATA.jabs.find(j =>
+      j.toLowerCase().includes(prefix.toLowerCase()) &&
+      rows.some(r => r.jab === j)))
+    .filter(Boolean);
+
+  const avgAt = (rr, no) => {
+    const v = rr.map(r => sv(r, no - 1)).filter(x => x != null);
+    return v.length ? avgOf(v) : null;
+  };
+
+  const datasets = jabs.map(j => {
+    const color = jColor(j);
+    const jobRows=rows.filter(r=>r.jab===j);
+    return {
+      label: pasporName(j),
+      data: info.map(i => i.jab===j?avgAt(jobRows,i.no):null),
+      borderColor: color,
+      backgroundColor: rgba(color, 0.14),
+      borderWidth: 2,
+      pointRadius: 2.5,
+      pointHoverRadius: 6,
+      pointBackgroundColor: color,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1,
+      spanGaps: false,
+      fill: true
+    };
+  });
+
+  mk(id, {
+    type: 'radar',
+    data: { labels: info.map(i=>String(i.no).padStart(2,'0')), datasets },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(tip(), {
+          callbacks: {
+            title: items => getUnitName(state.f.jab,info[items[0].dataIndex].no),
+            label: c => ' ' + c.dataset.label + ': ' + fmt2(c.parsed.r)
+          }
+        })
+      },
+      scales: radarScale(5, 1, info.length > 30 ? 9 : 11)
+    }
+  });
+
+  return { series: jabs.map(j => [pasporName(j), jColor(j)]) };
+}
+function renderSummaryRadars(rows){
+  const host=$('#summaryRadars');
+  const stale=Object.keys(charts).filter(id=>id.startsWith('cRadar-'));
+  stale.forEach(id=>{ charts[id].destroy(); delete charts[id]; });
+  const jabs=['Analis','Asesor','Auditor']
+    .map(prefix=>DATA.jabs.find(j=>passportKey(j)===prefix&&rows.some(r=>r.jab===j)))
+    .filter(Boolean);
+  if(!jabs.length){ host.innerHTML='<div class="passport-radar-empty">Tidak ada data unit kompetensi untuk filter ini.</div>'; return; }
+  host.innerHTML=jabs.map(j=>{
+    const info=soalInfo(rows.filter(r=>r.jab===j)), id='cRadar-'+passportKey(j).toLowerCase();
+    return '<section class="passport-radar-panel"><h4>'+esc(pasporName(j))+'</h4><p class="sub">Rata-rata nilai per nomor soal · skala 0–5</p><div class="chart summary-radar"><canvas id="'+id+'"></canvas></div>'+unitKeyHTML(info,true)+'</section>';
+  }).join('');
+  jabs.forEach(j=>{
+    const info=soalInfo(rows.filter(r=>r.jab===j)), id='cRadar-'+passportKey(j).toLowerCase(), color=jColor(j);
+    mk(id,{type:'radar',data:{labels:info.map(i=>String(i.no).padStart(2,'0')),datasets:[{
+      label:pasporName(j),data:info.map(i=>i.avg),borderColor:color,backgroundColor:rgba(color,.14),borderWidth:2,
+      pointRadius:2.5,pointHoverRadius:5,pointBackgroundColor:color,pointBorderColor:'#fff',pointBorderWidth:1,spanGaps:false,fill:true
+    }]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{callbacks:{
+      title:items=>getUnitName(j,info[items[0].dataIndex].no),
+      label:c=>' Rata-rata '+fmt2(c.parsed.r)+' ('+fmt(info[c.dataIndex].count)+' peserta)'
+    }})},scales:radarScale(5,1,info.length>30?8:10)}});
+  });
+}
+
+/* ================= tampilan ================= */
+function renderFilters(){
+  const all=DATA.rows;
+  const opt=(id,label,list,cur)=>{ $(id).innerHTML='<option value="">'+label+'</option>'+list.map(v=>'<option'+(v===cur?' selected':'')+' value="'+esc(v)+'">'+esc(v)+'</option>').join(''); };
+  // REVISI: pilihan jabatan bergantung pada jenjang, sedangkan pencarian instansi memakai datalist.
+  const jenjangs=[...new Set(all.map(r=>r.jenjang).filter(Boolean))].sort();
+  const jabs=DATA.jabs.filter(j=>!state.f.jenjang||all.some(r=>r.jab===j&&r.jenjang===state.f.jenjang));
+  if(state.f.jab&&!jabs.includes(state.f.jab)) state.f.jab='';
+  opt('#fJenjang','Semua jenjang',jenjangs,state.f.jenjang); opt('#fJab','Semua jabatan',jabs,state.f.jab);
+  opt('#fHasil','Semua hasil',DATA.hasils,state.f.hasil);
+  opt('#fBatch','Semua batch',DATA.batches,state.f.batch);
+  $('#fInst').value=state.f.inst;
+  $('#instOptions').innerHTML=DATA.insts.map(v=>'<option value="'+esc(v)+'"></option>').join('');
+  // REVISI: pencarian dan reset tidak ditampilkan pada halaman Ringkasan.
+  const summary=state.view==='ringkasan';
+  $('#qField').hidden=summary||AUTH.isUser(); $('#reset').hidden=summary||AUTH.isUser();
+}
+const ICONS={
+  ringkasan:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  peserta:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.3 3.5 5.2"/>',
+  paspor0:'<path d="M5 20V10M12 20V4M19 20v-7"/>', paspor1:'<path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M9 12l2.2 2.2L15 10"/>', paspor2:'<rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 3h6v3H9zM9 12h6M9 16h4"/>',
+  soal:'<path d="M4 6h16M4 12h16M4 18h10"/>', data:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'
+};
+function renderNav(){
+  // REVISI: urutan menu mendahulukan peserta, lalu Paspor Analis, Asesor, dan Auditor.
+  const items=[['ringkasan','Ringkasan','ringkasan'],['peserta','Data Peserta','peserta']];
+  const preferred=['Analis','Asesor','Auditor'];
+  preferred.map(prefix=>DATA.jabs.find(j=>j.toLowerCase().includes(prefix.toLowerCase()))).filter(Boolean)
+    .forEach((j,i)=>items.push(['paspor:'+j,pasporName(j),'paspor'+i]));
+  items.push(['soal','Daftar Unit Kompetensi','soal'],['data','Kualitas Data','data']);
+  const visible=items.filter(item=>canAccess(item[0].startsWith('paspor:')?'paspor':item[0]));
+  const cur=state.view==='paspor'?'paspor:'+state.f.jab:state.view;
+  $('#nav').innerHTML=visible.map((x,i)=>{
+    const separator=(i===2||i===visible.length-2)&&visible.length>3?'<div class="sep"></div>':'';
+    return separator+'<button data-view="'+esc(x[0])+'" '+(x[0]===cur?'aria-current="page"':'')+'><svg viewBox="0 0 24 24">'+ICONS[x[2]]+'<\/svg><span>'+esc(x[1])+'</span></button>';
+  }).join('');
+}
+
+function renderAll(){
+  const rows=filtered(), st=stats(rows);
+  $('#countPill').innerHTML='<b>'+fmt(rows.length)+'</b> dari '+fmt(DATA.rows.length)+' peserta';
+  const names={ringkasan:'Ringkasan',peserta:'Data Peserta',soal:'Daftar Unit Kompetensi',data:'Kualitas Data',paspor:pasporName(state.f.jab)};
+  $('#title').textContent=names[state.view];
+  const roleLabel=AUTH.isUser()?('Data pribadi · '+AUTH.current.name):(state.view==='paspor'?state.f.jab:(state.f.jab||'Semua jabatan'));
+  $('#subtitle').textContent=roleLabel+' · '+fmt(rows.length)+' peserta';
+  const v=$('#v-'+state.view); v.classList.remove('fade'); void v.offsetWidth; v.classList.add('fade');
+  if(state.view==='ringkasan') renderSummary(rows,st);
+  if(state.view==='peserta') renderTable('tblPeserta',rows);
+  if(state.view==='paspor') renderPaspor(rows,st);
+  if(state.view==='soal') renderSoal(rows);
+  if(state.view==='data') renderQuality();
+}
+
+// REVISI #3: Grafik capaian per jenjang jabatan (grouped bar)
+function renderCapaianPerJenjang(rows) {
+  const jenjangs = [...new Set(rows.map(r => r.jenjang).filter(Boolean))].sort();
+  if (!jenjangs.length) {
+    if (charts.cJtCapaian) { charts.cJtCapaian.destroy(); delete charts.cJtCapaian; }
+    $('#lgJtCapaian').innerHTML = '';
+    return;
+  }
+
+  const memData = jenjangs.map(j =>
+    rows.filter(r => r.jenjang === j && r.hasil === 'Memenuhi').length);
+  const belData = jenjangs.map(j =>
+    rows.filter(r => r.jenjang === j && r.hasil === 'Belum Memenuhi').length);
+
+  const ok = css('--ok'), no = css('--no');
+  chartBase();
+
+  mk('cJtCapaian', {
+    type: 'bar',
+    data: {
+      labels: jenjangs,
+      datasets: [
+        {
+          label: 'Memenuhi',
+          data: memData,
+          backgroundColor: grad(ok, css('--ok-2'), false),
+          borderRadius: { topLeft: 8, topRight: 8 },
+          borderSkipped: false,
+          maxBarThickness: 44
+        },
+        {
+          label: 'Belum Memenuhi',
+          data: belData,
+          backgroundColor: grad(no, css('--no-2'), false),
+          borderRadius: { topLeft: 8, topRight: 8 },
+          borderSkipped: false,
+          maxBarThickness: 44
+        }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: Object.assign(tip(), {
+          callbacks: {
+            label: c => ' ' + c.dataset.label + ': ' + fmt(c.parsed.y) + ' peserta'
+          }
+        })
+      },
+      scales: {
+        x: axis({ grid: { display: false } }),
+        y: axis({ beginAtZero: true })
+      }
+    }
+  });
+
+  $('#lgJtCapaian').innerHTML = legendHTML([['Memenuhi', ok], ['Belum Memenuhi', no]]);
+}
+
+function renderSummary(rows,st){
+  $('#kpis').innerHTML=kpiHTML(st,rows); chartBase();
+  const ok=css('--ok'), no=css('--no');
+  mk('cDonut',{center:{big:st.pct==null?'-':fmt1(st.pct)+'%',small:'memenuhi'},type:'doughnut',data:{labels:['Memenuhi','Belum Memenuhi'],datasets:[{data:[st.mem,st.bel],backgroundColor:[ok,no],borderColor:'transparent',borderWidth:0,spacing:3,borderRadius:8,hoverOffset:6}]},
+    options:{maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:10,padding:16}},tooltip:Object.assign(tip(),{callbacks:{label:c=>' '+c.label+': '+fmt(c.parsed)+' peserta'}})}}});
+  // distribusi jabatan (jenjang jabatan)
+  const dm={}; rows.forEach(r=>{ const k=r.jt||r.jab; dm[k]=(dm[k]||0)+1; });
+  const dl=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
+  mk('cDist',{valueLabels:true,type:'bar',data:{labels:dl.map(x=>x[0]),datasets:[{data:dl.map(x=>x[1]),backgroundColor:grad(css('--purple'),css('--cyan'),true),borderRadius:99,borderSkipped:false,maxBarThickness:26}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,layout:{padding:{right:46}},plugins:{legend:{display:false},tooltip:Object.assign(tip(),{displayColors:false,callbacks:{label:c=>fmt(c.parsed.x)+' peserta'}})},
+      scales:{x:axis({beginAtZero:true}),y:axis({grid:{display:false},ticks:{color:css('--ink-2'),padding:8,font:{size:11.5,weight:'600'}}})}}});
+  renderSummaryRadars(rows);
+  // profil level per jabatan (radar 6 sumbu)
+  const jabs=DATA.jabs.filter(j=>rows.some(r=>r.jab===j));
+  const lvSeries=jabs.map(j=>{ const rr=rows.filter(r=>r.jab===j), lv=[0,0,0,0,0,0]; rr.forEach(r=>{ if(r.ld!=null&&r.ld>=0&&r.ld<=5) lv[r.ld]++; }); return {j,data:lv.map(x=>rr.length?+(x/rr.length*100).toFixed(1):0)}; });
+  const mx=Math.max(10,Math.ceil(Math.max(0,...lvSeries.flatMap(s=>s.data))/10)*10);
+  mk('cLvRadar',{type:'radar',data:{labels:['Level 0','Level 1','Level 2','Level 3','Level 4','Level 5'],datasets:lvSeries.map(s=>({label:pasporName(s.j),data:s.data,borderColor:jColor(s.j),backgroundColor:rgba(jColor(s.j),.14),borderWidth:2,pointRadius:3,pointBackgroundColor:jColor(s.j),pointBorderColor:'#fff',pointBorderWidth:1}))},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{callbacks:{label:c=>' '+c.dataset.label+': '+fmt1(c.parsed.r)+'%'}})},scales:radarScale(mx,mx/5,11)}});
+  $('#lgLv').innerHTML=legendHTML(jabs.map(j=>[pasporName(j),jColor(j)]));
+  // REVISI #4: ranking per paspor
+  $('#rank').innerHTML = rankHTMLPerJabatan(rows);
+  // REVISI: heatmap memakai label unit kompetensi.
+  const hRows=jabs.map(j=>({label:pasporName(j),jab:j}));
+  const info=soalInfo(rows);
+  const cache={}; const avgSoal=(jab,no)=>{ const k=jab+'|'+no; if(!(k in cache)){ const v=rows.filter(r=>!jab||r.jab===jab).map(r=>sv(r,no-1)).filter(x=>x!=null); cache[k]=v.length?avgOf(v):null; } return cache[k]; };
+  const cols=soalCols(info);
+  if (info.length) {
+    $('#hmA').innerHTML = heatGrid({
+      cols,
+      rows: hRows,
+      cw: 42,
+      lw: 130,
+      domain: [0, 5],
+      showValues: false,
+      get: (r, c) => r.jab===c.jab?avgSoal(c.jab,c.no):null,
+      fmtv: fmt1,
+      legendLabels: ['0', '5']
+    })+unitKeyHTML(cols,true);
+    $('#hmA').insertAdjacentHTML('beforeend',
+      '<p class="sub" style="margin:10px 0 0">Menampilkan seluruh ' + info.length + ' unit kompetensi yang memiliki jawaban pada filter ini. ' +
+      'Tanda "-" berarti unit tidak dipakai oleh paspor tersebut.</p>');
+  } else {
+    $('#hmA').innerHTML = '<div class="empty">Data unit kompetensi belum tersedia.</div>';
+  }
+  heatSebaran('hmB',rows);
+  // histogram nilai
+  const bins=[...Array(10)].map((_,i)=>({lo:i*.5,m:0,b:0}));
+  rows.forEach(r=>{ if(r.nilai==null) return; const i=Math.min(9,Math.floor(r.nilai/.5)); if(r.hasil==='Memenuhi') bins[i].m++; else bins[i].b++; });
+  mk('cHist',{type:'bar',data:{labels:bins.map((b,i)=>fmt1(b.lo)+(i===9?' - 5,0':'')),datasets:[
+      {label:'Memenuhi',data:bins.map(b=>b.m),backgroundColor:grad(ok,css('--ok-2'),false),borderRadius:6,borderSkipped:false},
+      {label:'Belum Memenuhi',data:bins.map(b=>b.b),backgroundColor:grad(no,css('--no-2'),false),borderRadius:6,borderSkipped:false}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{callbacks:{title:i=>'Nilai mulai '+i[0].label}})},scales:{x:axis({stacked:true,grid:{display:false}}),y:axis({stacked:true,beginAtZero:true})}}});
+  $('#lgHist').innerHTML=legendHTML([['Memenuhi',ok],['Belum Memenuhi',no]]);
+  // scatter durasi x nilai
+  const withD=rows.filter(r=>r.dur!=null&&r.dur>0&&r.nilai!=null), ds=withD.map(r=>r.dur).sort((a,b)=>a-b), cap=ds.length?Math.ceil(ds[Math.floor(ds.length*.98)]/10)*10:60, outN=withD.filter(r=>r.dur>cap).length;
+  $('#subScatter').textContent='Tiap titik adalah satu peserta'+(outN?'. '+fmt(outN)+' peserta dengan durasi di atas '+cap+' menit tidak ditampilkan.':'.');
+  mk('cScatter',{type:'scatter',data:{datasets:jabs.map(j=>({label:pasporName(j),data:withD.filter(r=>r.jab===j&&r.dur<=cap).map(r=>({x:r.dur,y:r.nilai,n:r.nama})),backgroundColor:rgba(jColor(j),.55),pointRadius:3.5,pointHoverRadius:6}))},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{callbacks:{label:c=>' '+c.raw.n+': '+fmt1(c.raw.x)+' mnt, nilai '+fmt2(c.raw.y)}})},
+      scales:{x:axis({title:{display:true,text:'Durasi (menit)',color:css('--ink-3')},min:0,max:cap}),y:axis({title:{display:true,text:'Nilai',color:css('--ink-3')},min:0,max:5})}}});
+  $('#lgSc').innerHTML=legendHTML(jabs.map(j=>[pasporName(j),jColor(j)]));
+  // per hari
+  const days={}; rows.forEach(r=>{ if(r.day) days[r.day]=(days[r.day]||0)+1; }); const dk=Object.keys(days).sort();
+  mk('cDay',{valueLabels:true,type:'bar',data:{labels:dk.map(d=>d.split('-').reverse().join('/')),datasets:[{data:dk.map(d=>days[d]),backgroundColor:grad(css('--pink'),css('--purple'),false),borderRadius:{topLeft:10,topRight:10},borderSkipped:false,maxBarThickness:70}]},
+    options:{maintainAspectRatio:false,layout:{padding:{top:22}},plugins:{legend:{display:false},tooltip:Object.assign(tip(),{displayColors:false,callbacks:{label:c=>fmt(c.parsed.y)+' peserta'}})},scales:{x:axis({grid:{display:false}}),y:axis({beginAtZero:true})}}});
+  // instansi
+  const im={}; rows.forEach(r=>{ if(r.inst) im[r.inst]=(im[r.inst]||0)+1; });
+  const top=Object.entries(im).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
+  mk('cInst',{type:'bar',data:{labels:top.map(t=>t.length>32?t.slice(0,31)+'…':t),datasets:[
+      {label:'Memenuhi',data:top.map(t=>rows.filter(r=>r.inst===t&&r.hasil==='Memenuhi').length),backgroundColor:grad(ok,css('--ok-2'),true),borderRadius:6,borderSkipped:false},
+      {label:'Belum Memenuhi',data:top.map(t=>rows.filter(r=>r.inst===t&&r.hasil==='Belum Memenuhi').length),backgroundColor:grad(no,css('--no-2'),true),borderRadius:6,borderSkipped:false}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{callbacks:{title:i=>top[i[0].dataIndex]}})},scales:{x:axis({stacked:true,beginAtZero:true}),y:axis({stacked:true,grid:{display:false},ticks:{color:css('--ink-2'),padding:8,font:{size:11}}})}}});
+  $('#lgInst').innerHTML=legendHTML([['Memenuhi',ok],['Belum Memenuhi',no]]);
+  // heatmap waktu
+  const hours=[...Array(24)].map((_,h)=>({label:String(h).padStart(2,'0'),h})); const tm={}; rows.forEach(r=>{ if(r.day&&r.hour!=null){ const k=r.day+'|'+r.hour; tm[k]=(tm[k]||0)+1; } });
+  $('#hmC').innerHTML=dk.length?heatGrid({cols:hours,rows:dk.map(d=>({label:d.split('-').reverse().join('/'),d})),cw:30,lw:100,get:(r,c)=>tm[r.d+'|'+c.h]||0,fmtv:fmt,unit:' peserta'}):'<div class="empty">Tidak ada data waktu.</div>';
+  const jts = [...new Set(rows.map(r => r.jt).filter(Boolean))].sort();
+  // REVISI #7: heatmap jenjang × jabatan × level dominan
+  const comboKeys = [...new Set(
+    rows
+      .filter(r => r.jt && r.jab && r.ld != null)
+      .map(r => r.jt + '||' + r.jab)
+  )].sort((a, b) => a.localeCompare(b, 'id'));
+
+  const lvCntCombo = {};
+  const comboTotal = {};
+  rows.forEach(r => {
+    if (r.jt && r.jab && r.ld != null) {
+      const k = r.jt + '||' + r.jab;
+      const lk = k + '|' + r.ld;
+      lvCntCombo[lk] = (lvCntCombo[lk] || 0) + 1;
+      comboTotal[k] = (comboTotal[k] || 0) + 1;
+    }
+  });
+
+  const hRowsD = comboKeys.map(c => {
+    const [jt, jab] = c.split('||');
+    return { label: jt + ' — ' + jab, key: c };
+  });
+
+  const maxVal = Object.values(lvCntCombo).length
+    ? Math.max(...Object.values(lvCntCombo))
+    : 1;
+
+  $('#hmD').innerHTML = hRowsD.length
+    ? heatGrid({
+        cols: [0, 1, 2, 3, 4, 5].map(n => ({ label: 'Level ' + n, n })),
+        rows: hRowsD,
+        cw: 54,
+        lw: 280,
+        domain: [0, maxVal],
+        get: (r, c) => lvCntCombo[r.key + '|' + c.n] || 0,
+        fmtv: fmt,
+        subvalue: (r, c, v) =>
+          fmt1((v / (comboTotal[r.key] || 1)) * 100) + '%'
+      })
+    : '<div class="empty">Tidak ada data.</div>';
+  $('#jtBars').innerHTML=jts.length?jts.map(j=>{ const rr=rows.filter(r=>r.jt===j), s=stats(rr), w=s.pct||0;
+    return '<div class="bar-row"><div class="hd"><b>'+esc(j)+'</b><span>'+fmt(rr.length)+' peserta</span></div><div class="track"><i style="width:'+w+'%"></i></div><div class="ft">'+fmt(s.mem)+' memenuhi · '+fmt(s.bel)+' belum · '+fmt1(w)+'%</div></div>'; }).join(''):'<div class="empty">Tidak ada data.</div>';
+  // REVISI #3: panggil grafik capaian per jenjang
+  renderCapaianPerJenjang(rows);
+}
+
+function renderPaspor(rows,st){
+  $('#pKpis').innerHTML=kpiHTML(st,rows); chartBase();
+  const jab=state.f.jab, info=soalInfo(rows);
+  const instrumentCount=(DATA.active[jab]||[]).filter(Boolean).length;
+  $('#pRadarSub').textContent=instrumentCount? 'Rata-rata nilai untuk '+instrumentCount+' unit kompetensi pada paspor ini; dihitung dari peserta yang menjawab.':'Data unit kompetensi belum tersedia';
+  radarSoal('pRadar', rows);
+  $('#pRadarKey').innerHTML=unitKeyHTML(info,true);
+  const lv=[0,0,0,0,0,0]; rows.forEach(r=>{ if(r.ld!=null&&r.ld>=0&&r.ld<=5) lv[r.ld]++; });
+  mk('pLevel',{valueLabels:true,type:'bar',data:{labels:['0','1','2','3','4','5'].map(x=>'Level '+x),datasets:[{data:lv,backgroundColor:lv.map((_,i)=>LV(i)),borderRadius:{topLeft:8,topRight:8},borderSkipped:false,maxBarThickness:44}]},
+    options:{maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:Object.assign(tip(),{displayColors:false,callbacks:{label:c=>fmt(c.parsed.y)+' peserta'}})},scales:{x:axis({grid:{display:false},ticks:{color:css('--ink-3'),font:{size:10.5}}}),y:axis({beginAtZero:true})}}});
+  $('#pRank').innerHTML=rankHTML(rows);
+  mk('pBar',{type:'bar',data:{labels:info.map(i=>String(i.no).padStart(2,'0')),datasets:[{data:info.map(i=>+i.avg.toFixed(2)),backgroundColor:info.map(i=>i.partial?css('--ink-3'):css('--purple')),borderRadius:{topLeft:6,topRight:6},borderSkipped:false,maxBarThickness:24}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{displayColors:false,callbacks:{title:i=>getUnitName(info[i[0].dataIndex].jab,info[i[0].dataIndex].no),label:c=>'Rata-rata '+fmt2(c.parsed.y)+' ('+fmt(info[c.dataIndex].count)+' peserta)'}})},
+      scales:{x:axis({grid:{display:false},ticks:{color:css('--ink-3'),autoSkip:false,maxRotation:0,font:{size:9.5}}}),y:axis({min:0,max:5,ticks:{stepSize:1,color:css('--ink-3'),padding:8}})}}});
+  $('#pBarKey').innerHTML=unitKeyHTML(info,true);
+  heatSebaran('pHm',rows); renderTable('tblPaspor',rows);
+}
+
+function renderSoal(rows){
+  const info=soalInfo(rows), jl=state.f.jab||'semua jabatan';
+  if(!rows.length){ $('#soalNote').textContent='Tidak ada peserta pada filter ini.'; $('#soalGrid').innerHTML=''; $('#soalScale').innerHTML=''; $('#soalSub').textContent=''; $('#cSoalKey').innerHTML=''; if(charts.cSoal){charts.cSoal.destroy();delete charts.cSoal;} return; }
+  if(!info.length){ $('#soalNote').textContent='Data unit kompetensi untuk '+jl+' belum tersedia.'; $('#soalGrid').innerHTML=''; $('#soalSub').textContent=''; $('#cSoalKey').innerHTML=''; if(charts.cSoal){charts.cSoal.destroy();delete charts.cSoal;} return; }
+  // REVISI: warna nilai mengikuti gradasi status dashboard.
+  const minAvg=Math.min(...info.map(i=>i.avg)), maxAvg=Math.max(...info.map(i=>i.avg));
+  // REVISI #6: gradasi kontinu
+  const avgColor = i => gradientColor(i.avg, minAvg, maxAvg);
+  const part=info.filter(i=>i.partial).length;
+  const instruments=DATA.jabs.map(j=>({jab:j,count:(DATA.active[j]||[]).filter(Boolean).length})).filter(x=>x.count);
+  const instrumentText=instruments
+    .filter(x=>!state.f.jab||x.jab===state.f.jab)
+    .map(x=>'<b>'+esc(pasporName(x.jab))+': '+x.count+' unit kompetensi terpetakan</b>').join('; ');
+  $('#soalNote').innerHTML='Jumlah unit kompetensi yang terpetakan menurut jabatan: '+instrumentText+'. Pada pilihan semua jabatan, setiap paspor ditampilkan terpisah dan tidak digabung berdasarkan nomor soal. Pada filter ini, '+info.length+' unit kompetensi memiliki jawaban'+(part?'; '+part+' unit kompetensi hanya dijawab sebagian peserta dan diberi tanda "sebagian"':'')+'. Rata-rata dihitung dari peserta yang menjawab.';
+  $('#soalSub').textContent=info.length+' unit kompetensi · nilai dihitung dari peserta yang menjawab';
+  $('#soalScale').innerHTML='Distribusi jawaban: '+[0,1,2,3,4,5].map(i=>'<span><i style="background:'+LV(i)+'"></i>'+i+'</span>').join(''); chartBase();
+  const includePassport=new Set(info.map(i=>i.jab)).size>1;
+  mk('cSoal',{type:'bar',data:{labels:info.map(i=>unitCode(i)),datasets:[{data:info.map(i=>+i.avg.toFixed(2)),backgroundColor:info.map(avgColor),borderRadius:{topLeft:6,topRight:6},borderSkipped:false,maxBarThickness:24}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:Object.assign(tip(),{displayColors:false,callbacks:{title:i=>unitDisplayName(info[i[0].dataIndex],includePassport),label:c=>'Rata-rata '+fmt2(c.parsed.y)+' ('+fmt(info[c.dataIndex].count)+' peserta)'}})},
+      scales:{x:axis({grid:{display:false},ticks:{color:css('--ink-3'),autoSkip:true,maxTicksLimit:15,maxRotation:0,font:{size:8.5}}}),y:axis({min:0,max:5,ticks:{stepSize:1,color:css('--ink-3'),padding:8}})}}});
+  $('#cSoalKey').innerHTML=unitKeyHTML(info,true);
+  const sorted=info.slice(); if(state.soalSort==='asc') sorted.sort((a,b)=>a.avg-b.avg); if(state.soalSort==='desc') sorted.sort((a,b)=>b.avg-a.avg);
+  $('#soalGrid').innerHTML=sorted.map(i=>'<div class="sc '+(minAvg!==maxAvg&&i.avg===minAvg?'low':minAvg!==maxAvg&&i.avg===maxAvg?'high':'')+'" title="'+esc(unitDisplayName(i,includePassport)+' · Sebaran nilai 0-5: '+i.dist.join(' / '))+'"><div class="t"><span>'+esc(unitDisplayName(i,includePassport))+'</span>'+(i.partial?'<em>sebagian</em>':'')+'</div><div class="v num">'+fmt2(i.avg)+'<small>rata-rata</small></div>'+
+    '<div class="stack">'+i.dist.map((d,n)=>d?'<i style="width:'+(d/i.count*100)+'%;background:'+LV(n)+'"></i>':'').join('')+'</div><div class="n">'+fmt(i.count)+' dari '+fmt(i.base)+' peserta menjawab</div></div>').join('');
+}
+
+function renderQuality(){
+  const R=DATA.rows, nipSet=new Set(R.map(r=>r.nip).filter(Boolean));
+  const jabSum=DATA.jabs.reduce((sum,j)=>sum+R.filter(r=>r.jab===j).length,0);
+  const missingNip=R.filter(r=>!r.nip).length;
+  const c=[['Baris di Excel',fmt(DATA.rowsAll),'Jumlah seluruh baris pada file'],
+    ['Peserta mengerjakan',fmt(R.length),'Jumlah peserta yang mengerjakan ujian'],
+    ['NIP unik',fmt(nipSet.size),nipSet.size===R.length?'Satu NIP untuk setiap peserta':'Jumlah NIP unik pada peserta yang mengerjakan'],
+    ['Total per jabatan',fmt(jabSum),jabSum===R.length?'Sesuai dengan jumlah peserta mengerjakan':'Periksa kembali pengelompokan jabatan'],
+    ['Unit Kompetensi pada file',fmt(DATA.soalCount),'Jumlah unit kompetensi pada file'],
+    ['Tidak mengerjakan',fmt(DATA.excluded.length),'Baris yang tidak mengikuti ujian'],
+    ['NIP kosong',fmt(missingNip),'Jumlah peserta tanpa NIP'],
+    ['Tanpa instansi / hasil / nilai',fmt(R.filter(r=>!r.inst).length)+' / '+fmt(R.filter(r=>!r.hasil).length)+' / '+fmt(R.filter(r=>r.nilai==null).length),'Instansi / hasil / nilai yang kosong']];
+  $('#checks').innerHTML=c.map(x=>'<div class="ck"><div class="l">'+x[0]+'</div><div class="v num">'+x[1]+'</div><div class="d">'+x[2]+'</div></div>').join('');
+  $('#jabTbl').innerHTML=DATA.jabs.map(j=>{ const rr=R.filter(r=>r.jab===j), si=soalInfo(rr), used=(DATA.active[j]||[]).filter(Boolean).length;
+    return '<tr><td><span class="jtag"><i style="background:'+jColor(j)+'"></i>'+esc(j)+'</span></td><td class="mono">'+fmt(rr.length)+'</td><td class="mono">'+used+'</td><td class="mono">'+si.filter(i=>i.partial).length+'</td><td class="mono">'+(DATA.soalCount-used)+'</td></tr>'; }).join('');
+  const f=['File Excel memuat <b>'+fmt(DATA.rowsAll)+'</b> baris. <b>'+fmt(DATA.excluded.length)+'</b> baris tidak mengerjakan'+(DATA.excluded.length?' ('+DATA.excluded.map(r=>esc(r.nama)).join(', ')+')':'')+'. Sebanyak <b>'+fmt(R.length)+'</b> peserta mengerjakan ujian dan terdapat <b>'+fmt(nipSet.size)+'</b> NIP unik.'];
+  DATA.jabs.forEach(j=>{
+    const missing=mappedQuestionNos(j).filter(no=>no>DATA.soalCount);
+    if(missing.length) f.push('<b>'+esc(j)+':</b> Nama unit kompetensi berikut terpetakan tetapi kolom nilainya tidak tersedia pada file: '+missing.map(no=>esc(getUnitName(j,no))).join('; ')+'.');
+  });
+  DATA.jabs.forEach(j=>{ const rr=R.filter(r=>r.jab===j), p=soalInfo(rr).filter(i=>i.partial); if(p.length) f.push('<b>'+esc(j)+':</b> '+p.map(i=>esc(getUnitName(j,i.no))).join('; ')+' hanya dijawab oleh sebagian peserta.'); });
+  $('#findings').innerHTML='<ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:9px;color:var(--ink-2)">'+f.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+}
+
+const chartGuides = {
+  cJtCapaian: ['Setiap kelompok menunjukkan satu jenjang jabatan; panjang batang menunjukkan jumlah peserta pada kategori hasil masing-masing.', 'Bandingkan jumlah Memenuhi dan Belum Memenuhi di dalam jenjang yang sama. Jumlah absolut juga dipengaruhi oleh banyaknya peserta pada jenjang tersebut.', 'Grafik mengikuti filter aktif. Gunakan tooltip untuk melihat jumlah peserta secara tepat.'],
+  cDonut: ['Bagian cincin menunjukkan proporsi peserta yang Memenuhi dan Belum Memenuhi pada data terfilter.', 'Persentase di tengah menunjukkan porsi yang Memenuhi; arahkan kursor ke bagian cincin untuk melihat jumlah peserta.', 'Grafik merangkum hasil akhir, bukan nilai rata-rata unit kompetensi.'],
+  cDist: ['Setiap batang mewakili satu jenjang jabatan; panjang batang menunjukkan jumlah peserta.', 'Bandingkan panjang batang untuk melihat banyaknya peserta antarjenjang. Grafik menampilkan jumlah, bukan persentase.', 'Arahkan kursor ke batang untuk melihat jumlah pastinya.'],
+  cRadar: ['Setiap kartu menampilkan radar untuk satu paspor. Nomor pada sumbu dicocokkan dengan kode dan nama kompetensi pada daftar di bawah grafik.', 'Titik yang lebih jauh dari pusat menunjukkan rata-rata nilai yang lebih tinggi pada skala 0–5. Bandingkan nama unitnya; nomor soal yang sama antar-paspor belum tentu merujuk pada unit yang sama.', 'Arahkan kursor ke titik untuk melihat nama unit dan rata-rata jawaban peserta.'],
+  cLvRadar: ['Sumbu menunjukkan level dominan 0–5, sedangkan warna menunjukkan paspor jabatan.', 'Jarak dari pusat menyatakan persentase peserta pada level tersebut. Bandingkan paspor pada sumbu level yang sama.', 'Nilai persentase dibaca melalui tooltip; jumlah peserta tiap paspor dapat berbeda.'],
+  hmA: ['Baris menunjukkan paspor jabatan dan kode kolom merujuk ke nama kompetensi pada daftar di bawah heatmap.', 'Warna sel menunjukkan rata-rata nilai 0–5. Arahkan kursor ke sel untuk melihat nilai pastinya.', 'Tanda “–” menandakan unit kompetensi tidak digunakan pada paspor tersebut.'],
+  hmB: ['Kode kolom dicocokkan dengan nama unit kompetensi pada daftar di bawah heatmap; baris menunjukkan nilai jawaban 0–5.', 'Warna sel menunjukkan persentase peserta pada kombinasi unit dan nilai tersebut. Arahkan kursor untuk melihat persentasenya.', 'Warna menunjukkan nilai jawaban, bukan besar persentase; gunakan tooltip untuk angka persentase yang tepat.'],
+  cHist: ['Sumbu mendatar membagi nilai akhir ke dalam rentang, sedangkan tinggi batang menunjukkan jumlah peserta.', 'Setiap batang dibagi menurut hasil Memenuhi dan Belum Memenuhi. Arahkan kursor untuk melihat rentang nilainya.', 'Grafik membantu melihat sebaran hasil akhir, bukan rata-rata nilai unit kompetensi.'],
+  cScatter: ['Setiap titik mewakili satu peserta. Posisi mendatar menunjukkan durasi pengerjaan dalam menit dan posisi tegak menunjukkan nilai akhir.', 'Warna membedakan paspor jabatan. Arahkan kursor ke titik untuk melihat informasi peserta.', 'Sebagian durasi yang jauh di atas sebaran umum dapat tidak ditampilkan; periksa catatan di bawah judul grafik.'],
+  cDay: ['Setiap batang mewakili tanggal mulai pengerjaan; tinggi batang menunjukkan jumlah peserta yang mulai pada tanggal tersebut.', 'Gunakan grafik untuk melihat pola waktu pengerjaan. Arahkan kursor ke batang untuk melihat jumlah pastinya.', 'Tanggal ditampilkan sesuai data yang lolos filter.'],
+  cInst: ['Grafik menampilkan hingga 10 instansi dengan peserta terbanyak; panjang batang menunjukkan jumlah peserta.', 'Warna batang membagi jumlah peserta menurut hasil Memenuhi dan Belum Memenuhi.', 'Bandingkan jumlah antarinstansi dengan memperhatikan bahwa grafik hanya menampilkan 10 instansi teratas.'],
+  hmC: ['Baris menunjukkan tanggal mulai pengerjaan dan kolom menunjukkan jam (00–23).', 'Warna sel menunjukkan jumlah peserta yang mulai pada tanggal dan jam tersebut; warna lebih pekat berarti jumlah lebih banyak.', 'Arahkan kursor ke sel untuk melihat jumlah peserta.'],
+  hmD: ['Setiap baris merupakan kombinasi jenjang dan jabatan; kolom menunjukkan level dominan 0–5.', 'Warna menunjukkan jumlah peserta pada kombinasi tersebut, sedangkan keterangan di sel menunjukkan persentasenya dalam baris.', 'Bandingkan persentase dalam satu baris untuk melihat distribusi level pada kelompok yang sama.'],
+  jtBars: ['Setiap baris menunjukkan satu jenjang jabatan; panjang batang menunjukkan porsi peserta yang Memenuhi.', 'Angka di bawah batang merangkum jumlah Memenuhi, Belum Memenuhi, dan persentase Memenuhi.', 'Persentase memudahkan perbandingan antarjenjang dengan jumlah peserta yang berbeda.'],
+  pRadar: ['Nomor pada sumbu radar dicocokkan dengan kode dan nama kompetensi pada daftar di bawah grafik.', 'Titik yang lebih jauh dari pusat menunjukkan rata-rata nilai yang lebih tinggi pada skala 0–5.', 'Arahkan kursor ke titik untuk melihat nama unit dan rata-rata jawaban peserta; grafik bukan nilai akhir.'],
+  pLevel: ['Batang menunjukkan jumlah peserta pada masing-masing level dominan 0–5.', 'Batang yang lebih tinggi berarti jumlah peserta pada level tersebut lebih banyak.', 'Arahkan kursor untuk melihat jumlah pastinya.'],
+  pBar: ['Setiap batang menunjukkan rata-rata nilai untuk satu unit kompetensi pada paspor yang dipilih.', 'Skala nilai adalah 0–5. Arahkan kursor untuk melihat nilai rata-rata dan jumlah peserta yang menjawab.', 'Batang abu-abu menandakan unit hanya dijawab sebagian peserta; tafsirkan rata-ratanya dengan mempertimbangkan jumlah jawaban.'],
+  pHm: ['Kode kolom dicocokkan dengan nama kompetensi pada daftar di bawah heatmap; baris menunjukkan nilai jawaban 0–5.', 'Warna sel menunjukkan persentase peserta pada tiap nilai untuk unit terkait; arahkan kursor untuk melihat persentasenya.', 'Gunakan legenda untuk membaca warna dan daftar kode untuk membedakan setiap unit.'],
+  cSoal: ['Setiap batang menunjukkan rata-rata nilai unit dengan kode yang dijelaskan pada daftar di bawah grafik.', 'Skala nilai adalah 0–5. Arahkan kursor ke batang untuk melihat nama unit, rata-rata nilai, dan jumlah peserta yang menjawab.', 'Batang abu-abu menandakan unit hanya dijawab sebagian peserta; nilai kosong tidak ditampilkan sebagai rata-rata.']
+};
+
+let modalReturnFocus = null;
+function openChartGuide(card, guideId) {
+  const title = card.querySelector('h3');
+  const guide = chartGuides[guideId];
+  if (!title || !guide) return;
+  modalReturnFocus = card;
+  $('#mName').textContent = title.textContent.trim();
+  $('#mSub').textContent = 'Panduan profesional untuk membaca grafik ini';
+  const list = document.createElement('ul');
+  list.className = 'guide-list';
+  guide.forEach(text => {
+    const item = document.createElement('li');
+    item.textContent = text;
+    list.appendChild(item);
+  });
+  $('#mBody').replaceChildren(list);
+  $('#modal').classList.add('guide-open', 'open');
+  $('#mClose').focus();
+}
+
+function closeModal() {
+  $('#modal').classList.remove('open', 'guide-open');
+  const trigger = modalReturnFocus;
+  modalReturnFocus = null;
+  if (trigger && trigger.isConnected) trigger.focus();
+}
+
+function initializeChartGuides() {
+  document.querySelectorAll('.card').forEach(card => {
+    const visual = card.querySelector('canvas, [id="hmA"], [id="hmB"], [id="hmC"], [id="hmD"], [id="pHm"], [id="jtBars"]');
+    const guideId=visual&&visual.id.startsWith('cRadar-')?'cRadar':visual?.id;
+    if (!visual || !chartGuides[guideId]) return;
+    const title = card.querySelector('h3');
+    if (!title) return;
+    card.classList.add('chart-guide-card');
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-haspopup', 'dialog');
+    card.setAttribute('aria-label', 'Panduan membaca grafik: ' + title.textContent.trim());
+    card.title = 'Klik untuk membuka panduan membaca grafik';
+    card.addEventListener('click', event => {
+      if (event.target.closest('button, a, input, select, textarea, label, [contenteditable="true"]')) return;
+      openChartGuide(card, guideId);
+    });
+    card.addEventListener('keydown', event => {
+      if (event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
+      event.preventDefault();
+      openChartGuide(card, guideId);
+    });
+  });
+}
+
+/* ================= detail peserta ================= */
+function openDetail(i){
+  const r=DATA.rows[i]; if(!r) return;
+  modalReturnFocus = null;
+  $('#mName').textContent=r.nama; $('#mSub').textContent=r.nip;
+  const fields=[['Jabatan',r.jab],['Jenjang jabatan',r.jt],['Instansi',r.inst||'-'],['Nilai',fmt2(r.nilai)],['Level dominan',r.ld==null?'-':r.ld],['Hasil',r.hasil||'-'],['Batch',r.batch||'-'],
+    ['Mulai',r.mulai?r.mulai.replace('T',' '):'-'],['Selesai',r.sel?r.sel.replace('T',' '):'-'],['Durasi',r.dur==null?'-':fmt1(r.dur)+' menit']];
+  const avail=soalInfo(DATA.rows.filter(x=>x.jab===r.jab));
+  const chips=avail.map(i=>{ const v=r.s[i.no-1], name=esc(getUnitName(r.jab,i.no)); return v==null?'<div class="chip">'+name+'<b>-</b></div>':'<div class="chip on'+(v<=1?' lo':'')+'" style="background:'+LV(v)+'">'+name+'<b>'+v+'</b></div>'; }).join('');
+  $('#mBody').innerHTML='<dl class="dl">'+fields.map(f=>'<div><dt>'+f[0]+'</dt><dd>'+esc(f[1])+'</dd></div>').join('')+'</dl><h3 style="margin:0 0 8px;font-size:15px;font-weight:700">Nilai per Unit Kompetensi ('+avail.length+' unit kompetensi untuk '+esc(r.jab)+')</h3><div class="scale">'+[0,1,2,3,4,5].map(n=>'<span><i style="background:'+LV(n)+'"></i>'+n+'</span>').join('')+'</div><div class="chips">'+chips+'</div>';
+  $('#modal').classList.add('open'); $('#mClose').focus();
+}
+
+/* ================= status, muat, navigasi ================= */
+function status(msg,type){ const el=$('#status'); el.className='status show '+type; el.textContent=msg; if(type==='ok') setTimeout(()=>{ if(el.textContent===msg) el.className='status'; },6000); }
+async function apiRequest(path,options){
+  const request=Object.assign({credentials:'same-origin'},options||{});
+  request.headers=Object.assign({},request.headers||{});
+  if(request.body&&typeof request.body==='string') request.headers['Content-Type']='application/json';
+  const response=await fetch(path,request);
+  const contentType=response.headers.get('content-type')||'';
+  const result=contentType.includes('application/json')?await response.json():{};
+  if(!response.ok){
+    const error=new Error(result.detail||('Permintaan gagal ('+response.status+').'));
+    error.status=response.status;
+    throw error;
+  }
+  return result;
+}
+function applyRoleUI(){
+  const role=AUTH.current?AUTH.current.role:null;
+  document.documentElement.setAttribute('data-role',role||'guest');
+  $('.app').inert=!AUTH.current;
+  const badge=$('#userBadge');
+  badge.hidden=!AUTH.current;
+  if(AUTH.current){
+    $('#userName').textContent=AUTH.current.name;
+    $('#userRole').textContent=AUTH.current.role;
+  }
+}
+function showLogin(message){
+  $('#loginScreen').classList.add('show');
+  $('.app').inert=true;
+  $('#loginForm').hidden=false;
+  $('#passwordChangeForm').hidden=true;
+  const error=$('#loginErr');
+  error.textContent=message||'';
+  error.classList.toggle('show',!!message);
+  $('#changeErr').classList.remove('show');
+  if(!message) $('#loginForm').reset();
+  setTimeout(()=>$('#loginUser').focus({preventScroll:true}),50);
+}
+function showPasswordChange(){
+  $('#loginScreen').classList.add('show');
+  $('.app').inert=true;
+  $('#loginForm').hidden=true;
+  $('#passwordChangeForm').hidden=false;
+  $('#loginTitle').textContent='Buat password baru';
+  $('#changeErr').classList.remove('show');
+  $('#passwordChangeForm').reset();
+  setTimeout(()=>$('#changeCurrent').focus({preventScroll:true}),50);
+}
+function hideLogin(){ $('#loginScreen').classList.remove('show'); $('.app').inert=!AUTH.current; window.scrollTo({top:0}); }
+async function startApp(user){
+  AUTH.current=user;
+  applyRoleUI();
+  if(user.must_change_password){ showPasswordChange(); return; }
+  $('#loginTitle').textContent='PETA Login';
+  hideLogin();
+  try{
+    const data=await apiRequest('/api/data');
+    setData(data,data.file||'');
+  }catch(error){
+    status('Gagal memuat data: '+error.message,'err');
+    if(error.status===401){
+      AUTH.current=null;
+      applyRoleUI();
+      showLogin('Sesi berakhir. Silakan masuk kembali.');
+    }
+  }
+}
+function setData(d,label){
+  UNIT_NAMES = d.unitNames || UNIT_NAMES;
+  DATA=prepare(d); state.f={jab:'',jenjang:'',hasil:'',batch:'',inst:'',q:''}; state.pages={}; state.view='ringkasan'; $('#q').value='';
+  $('#fileInfo').textContent=label?label+' · v3':'';
+  if(!DATA.rows.length&&(AUTH.isUser()||!DATA.rowsAll)){
+    ['ringkasan','peserta','paspor','soal','data'].forEach(x=>{ $('#v-'+x).hidden=x!=='ringkasan'; });
+    $('#filters').hidden=false;
+    $('#title').textContent='Ringkasan';
+    $('#subtitle').textContent=AUTH.isUser()?('Data pribadi · '+AUTH.current.name):'';
+    renderNav(); renderFilters();
+    status(AUTH.isUser()&&DATA.rowsAll?'Data Anda tercatat, tetapi belum termasuk perhitungan karena tidak ada ujian yang dikerjakan.':'Belum ada data. Admin dapat memuat file Excel.','info');
+    return;
+  }
+  goView('ringkasan');
+}
+function goView(v){
+  let view=v; if(v.startsWith('paspor:')){ view='paspor'; state.f.jab=v.slice(7); state.f.jenjang=''; } else if(state.view==='paspor') state.f.jab='';
+  if(!canAccess(view)){
+    status('Anda tidak memiliki akses ke halaman ini.','err');
+    const fallback=(VIEW_ACCESS[AUTH.current&&AUTH.current.role]||[])[0]||'ringkasan';
+    if(view!==fallback) return goView(fallback);
+    return;
+  }
+  state.view=view; state.pages={};
+  ['ringkasan','peserta','paspor','soal','data'].forEach(x=>{ $('#v-'+x).hidden=x!==view; });
+  $('#filters').hidden=view==='data'; $('#exportBtn').hidden=view==='data'||!AUTH.isAdmin();
+  renderNav(); renderFilters(); renderAll(); window.scrollTo({top:0});
+}
+function exportCSV(){
+  const rows=filtered(); if(!rows.length) return;
+  const cols=[['nip','NIP'],['nama','Nama'],['jab','Jabatan'],['jt','Jenjang Jabatan'],['inst','Instansi'],['nilai','Nilai'],['ld','Level Dominan'],['hasil','Hasil'],['batch','Batch']];
+  const jabs=DATA.jabs.filter(j=>rows.some(r=>r.jab===j));
+  const unitColumns=jabs.flatMap(j=>{
+    const numbers=passportKey(j)?mappedQuestionNos(j).filter(no=>no<=DATA.soalCount):[...Array(DATA.soalCount)].map((_,i)=>i+1);
+    return numbers.map(no=>({jab:j,no}));
+  });
+  const includePassport=jabs.length>1;
+  const csvCell=value=>'"'+String(value==null?'':value).replace(/"/g,'""')+'"';
+  const head=cols.map(c=>c[1]).concat(unitColumns.map(i=>unitDisplayName(i,includePassport))).map(csvCell).join(',');
+  const body=rows.map(r=>cols.map(c=>csvCell(r[c[0]])).concat(unitColumns.map(i=>i.jab===r.jab?(r.s[i.no-1]==null?'':r.s[i.no-1]):'')).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+head+'\n'+body],{type:'text/csv;charset=utf-8'})); a.download='PRISMA-terfilter.csv'; a.click();
+}
+function setTheme(t){ document.documentElement.setAttribute('data-theme',t); try{ localStorage.setItem('prisma-theme',t); }catch(e){} }
+
+/* ================= events ================= */
+$('#nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) goView(b.dataset.view); });
+$('#loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  try{
+    const user=await apiRequest('/api/auth/login',{method:'POST',body:JSON.stringify({username:$('#loginUser').value,password:$('#loginPass').value})});
+    AUTH.current=user;
+    applyRoleUI();
+    if(user.must_change_password) showPasswordChange();
+    else await startApp(user);
+  }catch(error){
+    showLogin(error.message||'Username atau password salah.');
+    $('#loginPass').value='';
+    $('#loginPass').focus();
+  }
+});
+$('#passwordChangeForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const current=$('#changeCurrent').value, next=$('#changeNew').value;
+  const error=$('#changeErr');
+  if(next!==$('#changeConfirm').value){
+    error.textContent='Password baru tidak sama.';
+    error.classList.add('show');
+    return;
+  }
+  try{
+    await apiRequest('/api/auth/change-password',{method:'POST',body:JSON.stringify({current_password:current,new_password:next})});
+    const user=await apiRequest('/api/auth/me');
+    await startApp(user);
+  }catch(err){
+    error.textContent=err.message||'Password tidak dapat diperbarui.';
+    error.classList.add('show');
+  }
+});
+$('#logoutBtn').addEventListener('click',async()=>{
+  try{
+    await apiRequest('/api/auth/logout',{method:'POST'});
+    window.location.reload();
+  }catch(error){
+    status('Gagal keluar: '+error.message,'err');
+  }
+});
+// REVISI: filter jenjang memutakhirkan pilihan jabatan, dan instansi bisa dicari sambil mengetik.
+$('#fJenjang').addEventListener('change',e=>{ state.f.jenjang=e.target.value; state.f.jab=''; state.pages={}; renderFilters(); renderAll(); });
+$('#fJab').addEventListener('change',e=>{ state.f.jab=e.target.value; state.pages={}; renderAll(); });
+[['#fHasil','hasil'],['#fBatch','batch']].forEach(([id,k])=>$(id).addEventListener('change',e=>{ state.f[k]=e.target.value; state.pages={}; renderAll(); }));
+$('#fInst').addEventListener('input',e=>{ state.f.inst=e.target.value; state.pages={}; renderAll(); });
+$('#q').addEventListener('input',e=>{ state.f.q=e.target.value; state.pages={}; renderAll(); });
+$('#reset').addEventListener('click',()=>{ const jab=state.view==='paspor'?state.f.jab:''; state.f={jab,jenjang:'',hasil:'',batch:'',inst:'',q:''}; $('#q').value=''; state.pages={}; renderFilters(); renderAll(); });
+document.addEventListener('click',e=>{
+  const th=e.target.closest('th[data-k]'); if(th){ const k=th.dataset.k; state.sort=state.sort.k===k?{k,dir:-state.sort.dir}:{k,dir:1}; renderAll(); return; }
+  const pb=e.target.closest('button[data-pg]'); if(pb){ state.pages[pb.dataset.pg]=(state.pages[pb.dataset.pg]||1)+(+pb.dataset.d); renderAll(); return; }
+  const tr=e.target.closest('tr[data-i]'); if(tr) openDetail(+tr.dataset.i);
+});
+$('#soalSort').addEventListener('change',e=>{ state.soalSort=e.target.value; renderAll(); });
+$('#mClose').addEventListener('click',closeModal);
+$('#modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#modal').classList.contains('open')) closeModal(); });
+$('#exportBtn').addEventListener('click',()=>{ if(!AUTH.isAdmin()){ status('Hanya admin yang dapat mengekspor data.','err'); return; } exportCSV(); });
+$('#themeBtn').addEventListener('click',()=>{ const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); setTheme(cur==='dark'?'light':'dark'); renderAll(); });
+function updateFullscreenButton(){
+  const active=!!document.fullscreenElement, button=$('#fullscreenBtn');
+  const label=active?'Keluar dari layar penuh':'Masuk layar penuh';
+  button.setAttribute('aria-label',label);
+  button.title=label;
+  button.innerHTML=active
+    ?'<svg viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m13-5v3a2 2 0 0 0 2 2h3M3 16h3a2 2 0 0 1 2 2v3m13-5h-3a2 2 0 0 0-2 2v3"/></svg>'
+    :'<svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg>';
+}
+$('#fullscreenBtn').addEventListener('click',async()=>{
+  try{
+    if(document.fullscreenElement) await document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    else throw new Error('Browser ini tidak mendukung mode layar penuh.');
+  }catch(err){
+    console.error('Gagal mengubah mode layar penuh:',err);
+    status(err.message||'Mode layar penuh tidak dapat diaktifkan.','err');
+  }
+});
+document.addEventListener('fullscreenchange',updateFullscreenButton);
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(DATA) renderAll(); }); }catch(e){}
+$('#fileInput').addEventListener('change',e=>{
+  if(!AUTH.isAdmin()){ status('Hanya admin yang dapat memuat data baru.','err'); e.target.value=''; return; }
+  const f=e.target.files[0]; if(!f) return; status('Membaca '+f.name+' ...','info');
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      const data=parseWorkbook(wb); data.file=f.name;
+      await apiRequest('/api/admin/import',{method:'POST',body:JSON.stringify(data)});
+      const saved=await apiRequest('/api/data');
+      setData(saved,f.name);
+      status('Berhasil memuat '+f.name+': '+fmt(data.rows.length)+' peserta, '+data.soalCount+' unit kompetensi.','ok');
+    }catch(err){
+      console.error(err);
+      status('Gagal memuat file: '+err.message,'err');
+    }
+  };
+  rd.onerror=()=>status('File tidak dapat dibaca.','err'); rd.readAsArrayBuffer(f); e.target.value='';
+});
+
+/* ================= mulai ================= */
+try{ const t=localStorage.getItem('prisma-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }catch(e){}
+initializeChartGuides();
+applyRoleUI();
+showLogin();
+apiRequest('/api/auth/me')
+  .then(user=>{ if(user.authenticated) startApp(user); })
+  .catch(error=>{
+    AUTH.current=null;
+    applyRoleUI();
+    showLogin('Server login tidak tersedia. Buka dashboard melalui server PETA.');
+  });
+</script>
+
+</body>
+</html>
