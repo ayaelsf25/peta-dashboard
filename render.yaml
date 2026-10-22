@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: peta-dashboard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PETA_ADMIN_PASSWORD
+        sync: false
+      - key: PETA_SESSION_SECRET
+        sync: false
+      - key: PETA_COOKIE_SECURE
+        value: "true"
+      - key: PETA_DB_PATH
+        value: /tmp/prisma.sqlite3
+      - key: PETA_SEED_WORKBOOK_URL
+        sync: false
+      - key: PETA_UNIT_NAMES_WORKBOOK_URL
+        sync: false

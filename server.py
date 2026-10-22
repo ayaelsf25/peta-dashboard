@@ -10,8 +10,10 @@ import sqlite3
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 from urllib.parse import urlsplit
+from urllib.request import Request as UrlRequest, urlopen
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
@@ -91,6 +93,61 @@ def verify_password(password: str, encoded: str) -> bool:
 
 def session_digest(token: str, secret: str) -> str:
     return hmac.new(secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _download_workbook(url: str, destination: Path) -> Path:
+    if destination.is_file() and destination.stat().st_size > 0:
+        return destination
+
+    parsed_url = urlsplit(url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        raise ValueError("URL workbook harus berupa URL HTTP atau HTTPS yang valid.")
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            mode="wb",
+            dir=destination.parent,
+            prefix=f".{destination.name}.",
+            suffix=".download",
+            delete=False,
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+            request = UrlRequest(url, headers={"User-Agent": "PETA Dashboard"})
+            with urlopen(request, timeout=60) as response:
+                while chunk := response.read(1024 * 1024):
+                    temporary_file.write(chunk)
+
+        if temporary_path.stat().st_size == 0:
+            raise ValueError("File Excel yang diunduh kosong.")
+        temporary_path.replace(destination)
+    except Exception:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        raise
+
+    return destination
+
+
+def _configured_workbook(
+    explicit_path: Path | None,
+    path_env: str,
+    url_env: str,
+    default_path: Path,
+    cached_filename: str,
+) -> Path:
+    if explicit_path is not None:
+        path = explicit_path
+    else:
+        url = os.getenv(url_env, "").strip()
+        if url:
+            cache_dir = Path(os.getenv("PETA_WORKBOOK_CACHE_DIR", "/tmp"))
+            return _download_workbook(url, cache_dir / cached_filename)
+        configured_path = os.getenv(path_env)
+        path = Path(configured_path) if configured_path else default_path
+
+    return path if path.is_absolute() else ROOT / path
 
 
 def initialize_database(path: Path, admin_password: str) -> None:
@@ -185,19 +242,21 @@ def create_app(
         path = db_path or Path(os.getenv("PETA_DB_PATH", str(ROOT / "server_data" / "prisma.sqlite3")))
         if not path.is_absolute():
             path = ROOT / path
+        workbook = _configured_workbook(
+            seed_workbook_path,
+            "PETA_SEED_WORKBOOK",
+            "PETA_SEED_WORKBOOK_URL",
+            DEFAULT_WORKBOOK,
+            "PRISMA_DATA_FINAL.xlsx",
+        )
+        unit_names_workbook = _configured_workbook(
+            unit_names_workbook_path,
+            "PETA_UNIT_NAMES_WORKBOOK",
+            "PETA_UNIT_NAMES_WORKBOOK_URL",
+            DEFAULT_UNIT_NAMES_WORKBOOK,
+            "NAMA UNIT KOMPETENSI.xlsx",
+        )
         initialize_database(path, password)
-        workbook = seed_workbook_path
-        if workbook is None:
-            workbook = Path(os.getenv("PETA_SEED_WORKBOOK", str(DEFAULT_WORKBOOK)))
-        if not workbook.is_absolute():
-            workbook = ROOT / workbook
-        unit_names_workbook = unit_names_workbook_path
-        if unit_names_workbook is None:
-            unit_names_workbook = Path(
-                os.getenv("PETA_UNIT_NAMES_WORKBOOK", str(DEFAULT_UNIT_NAMES_WORKBOOK))
-            )
-        if not unit_names_workbook.is_absolute():
-            unit_names_workbook = ROOT / unit_names_workbook
         save_unit_names(path, read_unit_names(unit_names_workbook))
         if seed_if_empty(path, workbook):
             logger.info("Seed awal berhasil: %s", workbook.name)

@@ -1,13 +1,15 @@
+import io
 import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import httpx
 from openpyxl import Workbook
 
 from seed_data import seed_if_empty
-from server import create_app, hash_password, verify_password
+from server import _download_workbook, create_app, hash_password, verify_password
 
 
 def participant(nip: str, name: str) -> dict:
@@ -29,6 +31,31 @@ def participant(nip: str, name: str) -> dict:
         "chk": "OK",
         "s": [4, 3],
     }
+
+
+class WorkbookDownloadTests(unittest.TestCase):
+    def test_downloads_once_and_reuses_cached_workbook(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            destination = Path(temp_dir) / "seed.xlsx"
+            with patch("server.urlopen", return_value=io.BytesIO(b"xlsx data")) as download:
+                result = _download_workbook("https://example.test/seed.xlsx", destination)
+                cached_result = _download_workbook("https://example.test/changed.xlsx", destination)
+
+            self.assertEqual(result, destination)
+            self.assertEqual(cached_result, destination)
+            self.assertEqual(destination.read_bytes(), b"xlsx data")
+            download.assert_called_once()
+
+    def test_rejects_invalid_url_and_empty_download(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            destination = Path(temp_dir) / "seed.xlsx"
+            with self.assertRaises(ValueError):
+                _download_workbook("file:///seed.xlsx", destination)
+
+            with patch("server.urlopen", return_value=io.BytesIO()):
+                with self.assertRaisesRegex(ValueError, "kosong"):
+                    _download_workbook("https://example.test/seed.xlsx", destination)
+            self.assertFalse(destination.exists())
 
 
 class AuthenticationTests(unittest.IsolatedAsyncioTestCase):
